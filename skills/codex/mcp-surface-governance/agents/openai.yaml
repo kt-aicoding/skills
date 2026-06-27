@@ -1,0 +1,4 @@
+interface:
+  display_name: "MCP Surface Governance"
+  short_description: "Design and govern small MCP server tool surfaces."
+  default_prompt: "Use $mcp-surface-governance to decide whether this capability should be an MCP server."

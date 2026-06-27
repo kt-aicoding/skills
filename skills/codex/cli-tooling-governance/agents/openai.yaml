@@ -1,0 +1,4 @@
+interface:
+  display_name: "CLI Tooling Governance"
+  short_description: "Decide, organize, and maintain AI coding CLI tools."
+  default_prompt: "Use $cli-tooling-governance to decide where this CLI tool belongs and how to maintain it."

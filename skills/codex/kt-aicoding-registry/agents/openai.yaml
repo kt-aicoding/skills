@@ -1,0 +1,4 @@
+interface:
+  display_name: "KT AI Coding Registry"
+  short_description: "Route AI coding assets to the right KT repositories."
+  default_prompt: "Use $kt-aicoding-registry to decide where this AI coding asset should live."
