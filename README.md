@@ -32,6 +32,27 @@ skills/
 | MCP Surface Governance | `skills/codex/mcp-surface-governance` | 判断能力是否适合暴露为 MCP server，设计小而安全的 tool surface |
 | KT AI Coding Registry | `skills/codex/kt-aicoding-registry` | 判断 AI coding 资产应归属哪个 kt-aicoding 仓库，并维护 catalog/README 一致性 |
 
+## 一行安装到 Codex
+
+```bash
+tmpdir="$(mktemp -d)" && git clone --depth 1 https://github.com/kt-aicoding/skills.git "$tmpdir" && mkdir -p "${CODEX_HOME:-$HOME/.codex}/skills" && cp -R "$tmpdir/skills/codex/"* "${CODEX_HOME:-$HOME/.codex}/skills/"
+```
+
+这会安装当前仓库中的全部 Codex skills。若只安装单个 skill，可以只复制对应目录，例如：
+
+```bash
+cp -R skills/codex/cli-tooling-governance "${CODEX_HOME:-$HOME/.codex}/skills/"
+```
+
+## 验证
+
+```bash
+for skill in skills/codex/*; do
+  python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-creator/scripts/quick_validate.py" "$skill"
+done
+git diff --check
+```
+
 ## 设计原则
 
 - 每个 skill 聚焦一个可重复执行的工作流。

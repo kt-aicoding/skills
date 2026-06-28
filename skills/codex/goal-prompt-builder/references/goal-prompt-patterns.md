@@ -31,7 +31,7 @@ Must read before continuing:
 2. <playbook/skill path>
 3. <checklist/ledger path>
 4. <completion audit path, if it exists>
-5. <secret/env path, if needed; do not output secrets>
+5. <secret manager names or required env var names, if needed; do not include raw values>
 
 Scope:
 - In scope: <projects/modules/environments>

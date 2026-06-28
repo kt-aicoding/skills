@@ -19,9 +19,9 @@ For detailed templates and examples, read `references/goal-prompt-patterns.md`.
    - Preserve the user's full scope; do not shrink it to the easiest passing subset.
 
 2. Define the working surface.
-   - Include root directories, repositories, branches, domains, services, docs, dashboards, issue/PR links, and secret locations.
+   - Include root directories, repositories, branches, domains, services, docs, dashboards, issue/PR links, and required access prerequisites.
    - Say which files or systems must be read before continuing after a resume.
-   - Mark secrets as readable inputs but forbidden output.
+   - Refer to secret names, environment variable names, or secret-manager entries only. Do not ask the agent to read, print, summarize, or commit raw credentials.
 
 3. Decompose into repeatable loops.
    - For multi-project work, use one complete loop per project or module.
@@ -76,8 +76,9 @@ Avoid these weak goal shapes:
 
 When the user asks for a goal prompt, output:
 
-1. A full reusable goal prompt in a fenced code block.
-2. A shorter `create_goal` objective string if useful.
-3. Any assumptions that materially affect scope or validation.
+1. A durable instruction file path and content when the full goal is complex.
+2. A paste-ready short `/goal` command under 4,000 characters.
+3. A compact `create_goal` objective string when useful.
+4. Material assumptions and pause conditions that affect scope or validation.
 
 When the user asks to install or publish the skill, create a standard skill folder with `SKILL.md`, optional `references/`, `agents/openai.yaml`, run validation, then commit and push.
