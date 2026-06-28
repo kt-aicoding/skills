@@ -28,6 +28,7 @@ skills/
 | Skill | 路径 | 用途 |
 | --- | --- | --- |
 | CLI Tooling Governance | `skills/codex/cli-tooling-governance` | 判断 CLI、脚本、MCP、skill、独立仓库之间的边界，治理 CLI 工具成熟度和升级策略 |
+| Goal Prompt Builder | `skills/codex/goal-prompt-builder` | 将复杂请求整理成长时间可续跑、可验证、可审计收口的 goal 提示词 |
 | MCP Surface Governance | `skills/codex/mcp-surface-governance` | 判断能力是否适合暴露为 MCP server，设计小而安全的 tool surface |
 | KT AI Coding Registry | `skills/codex/kt-aicoding-registry` | 判断 AI coding 资产应归属哪个 kt-aicoding 仓库，并维护 catalog/README 一致性 |
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Goal Prompt Builder"
+  short_description: "Create durable, verifiable long-run goals"
+  default_prompt: "Use $goal-prompt-builder to turn this work request into a durable, verifiable long-running goal prompt."
