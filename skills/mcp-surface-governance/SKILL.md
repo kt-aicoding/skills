@@ -1,6 +1,6 @@
 ---
 name: mcp-surface-governance
-description: Decide whether an AI coding capability should be exposed as an MCP server and design safe, small MCP tool surfaces. Use when updating kt-aicoding/mcp-servers, creating or reviewing MCP servers, deciding CLI versus MCP, defining MCP tool names/schemas/outputs/errors/auth, or pruning broad/default MCP surfaces.
+description: Choose MCP versus CLI, then design narrow MCP tools with typed inputs, structured outputs, scoped auth, and clear errors.
 ---
 
 # MCP Surface Governance

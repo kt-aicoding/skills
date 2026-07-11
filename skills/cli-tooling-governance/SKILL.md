@@ -1,6 +1,6 @@
 ---
 name: cli-tooling-governance
-description: Decide, organize, document, and maintain CLI tools for KT AI Coding. Use when a task asks whether something should be a CLI, script, skill, MCP server, standalone repo, or documentation; when updating kt-aicoding/cli-tools; when designing CLI maturity, upgrade, verification, provider CLI, or command governance; or when reviewing AI coding command-line tooling.
+description: Govern KT AI Coding CLI decisions. Use to choose between a CLI, local script, Skill, MCP server, docs, or standalone repository.
 ---
 
 # CLI Tooling Governance

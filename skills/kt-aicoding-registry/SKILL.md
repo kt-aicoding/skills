@@ -1,6 +1,6 @@
 ---
 name: kt-aicoding-registry
-description: Route AI coding assets to the correct kt-aicoding repository and keep registry/catalog documentation consistent. Use when adding, moving, or classifying skills, CLI tools, MCP servers, agent workflows, configuration kits, migration candidates, README/catalog entries, or organization-level governance docs in kt-aicoding.
+description: Route KT AI Coding Skills, CLIs, MCP servers, workflows, and config assets to canonical repositories; update links when assets move.
 ---
 
 # KT AI Coding Registry
