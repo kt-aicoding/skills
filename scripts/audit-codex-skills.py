@@ -31,6 +31,7 @@ class Skill:
     description: str
     path: str
     root: str
+    allow_implicit_invocation: bool
     sha256: str
     frontmatter_keys: tuple[str, ...]
     unsupported_keys: tuple[str, ...]
@@ -170,6 +171,31 @@ def disabled_skill_paths(config: Path) -> set[Path]:
     return disabled
 
 
+def allows_implicit_invocation(skill_file: Path) -> bool:
+    """Read the Codex-native invocation policy beside a skill, defaulting to true."""
+
+    metadata = skill_file.parent / "agents" / "openai.yaml"
+    if not metadata.is_file():
+        return True
+    try:
+        lines = metadata.read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeError):
+        return True
+    for index, line in enumerate(lines):
+        if not re.match(r"^policy:\s*(?:#.*)?$", line):
+            continue
+        for child in lines[index + 1 :]:
+            if child and not child[0].isspace():
+                break
+            match = re.match(
+                r"^\s+allow_implicit_invocation:\s*(true|false)\s*(?:#.*)?$",
+                child,
+            )
+            if match:
+                return match.group(1) == "true"
+    return True
+
+
 def find_broken_symlinks(roots: list[Path]) -> list[str]:
     broken: list[str] = []
     for root in roots:
@@ -212,6 +238,7 @@ def audit(roots: list[Path], config: Path, include_disabled: bool, max_descripti
                     description=description,
                     path=str(absolute),
                     root=str(root),
+                    allow_implicit_invocation=allows_implicit_invocation(path),
                     sha256=hashlib.sha256(text.encode("utf-8")).hexdigest(),
                     frontmatter_keys=keys,
                     unsupported_keys=tuple(sorted(set(keys) - ALLOWED_FRONTMATTER_KEYS)),
@@ -245,10 +272,17 @@ def audit(roots: list[Path], config: Path, include_disabled: bool, max_descripti
         if len(paths) > 1
     ]
     root_counts = Counter(skill.root for skill in skills)
+    implicit_skills = [skill for skill in skills if skill.allow_implicit_invocation]
+    explicit_only_skills = [skill for skill in skills if not skill.allow_implicit_invocation]
     return {
         "summary": {
             "active_skills": len(skills) + len(invalid),
             "valid_skills": len(skills),
+            "implicit_skills": len(implicit_skills),
+            "explicit_only_skills": len(explicit_only_skills),
+            "implicit_description_chars": sum(
+                len(skill.description) for skill in implicit_skills
+            ),
             "disabled_skills": len(disabled),
             "invalid_skills": len(invalid),
             "duplicate_name_groups": len(duplicate_names),
@@ -263,6 +297,14 @@ def audit(roots: list[Path], config: Path, include_disabled: bool, max_descripti
         "duplicate_names": duplicate_names,
         "exact_duplicates": exact_duplicates,
         "unsupported_frontmatter": unsupported,
+        "explicit_only_skills": [
+            {
+                "name": skill.name,
+                "path": skill.path,
+                "metadata_path": str(Path(skill.path).parent / "agents" / "openai.yaml"),
+            }
+            for skill in sorted(explicit_only_skills, key=lambda item: (item.name, item.path))
+        ],
         "long_descriptions": sorted(
             long_descriptions, key=lambda item: (-int(item["length"]), str(item["name"]))
         ),
@@ -286,6 +328,7 @@ def print_human(report: dict, verbose: bool) -> None:
         ("duplicate names", report["duplicate_names"]),
         ("exact duplicates", report["exact_duplicates"]),
         ("unsupported frontmatter", report["unsupported_frontmatter"]),
+        ("explicit-only skills", report["explicit_only_skills"]),
         ("long descriptions", report["long_descriptions"]),
     )
     for label, entries in sections:

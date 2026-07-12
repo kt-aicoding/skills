@@ -68,9 +68,34 @@ git diff --check
 
 不带 `--root` 时，`scripts/audit-codex-skills.py` 会读取 `$HOME/.agents/skills`、兼容
 目录 `$HOME/.codex/skills` 和 `~/.codex/config.toml`，报告同名冲突、完全重复、失效
-链接、非 Codex 原生 frontmatter 及过长描述。默认只审计当前启用项且不修改文件；
+链接、非 Codex 原生 frontmatter、过长描述，以及自动触发与仅显式调用的数量。默认只审计当前启用项且不修改文件；
 使用 `--verbose` 可展开全部发现，`--json` 可生成机器可读结果，使用 `--strict` 可在
 CI 中把问题转成非零退出码。
+
+本机的低频专业 Skill 由 `config/codex-explicit-only-skills.txt` 分类管理。它们不会占用
+Codex 初始 Skill 目录预算，但仍可通过 `$skill-name` 调用：
+
+```bash
+# 检查当前策略是否与清单一致
+python3 scripts/manage-codex-skill-policy.py
+
+# Skill 升级覆盖 agents/openai.yaml 后重新应用
+python3 scripts/manage-codex-skill-policy.py --apply
+
+# 恢复清单中 Skill 的默认自动触发行为
+python3 scripts/manage-codex-skill-policy.py --restore
+```
+
+使用量审计只聚合本机保留会话中的会话级命中次数，不写入 prompt、工具输出、工作目录
+或 session ID。运行后会更新 `reports/CODEX_SKILL_USAGE.md`：
+
+```bash
+python3 scripts/audit-codex-skill-usage.py
+```
+
+它分别统计用户显式 `$skill` 和 Codex 读取 `SKILL.md` 的证据，并标记高频长描述、
+高频 explicit-only Skill，以及没有保留使用证据但仍自动注入的候选项。`no-evidence`
+仅表示当前保留日志没有证据，不代表从未使用。
 
 ## 设计原则
 
