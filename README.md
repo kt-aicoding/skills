@@ -24,10 +24,16 @@ skills/
 | Skill | 路径 | 用途 |
 | --- | --- | --- |
 | CLI Tooling Governance | `skills/cli-tooling-governance` | 判断 CLI、脚本、MCP、Skill、独立仓库之间的边界，治理 CLI 工具成熟度和升级策略 |
+| Implementation Workflow | `skills/implementation-workflow` | 将实施计划、可选子 Agent 执行、验证和安全 Git 收口整合成一个 Codex 原生工作流 |
 | MCP Surface Governance | `skills/mcp-surface-governance` | 判断能力是否适合暴露为 MCP server，设计小而安全的 tool surface |
 | KT AI Coding Registry | `skills/kt-aicoding-registry` | 判断 AI coding 资产应归属哪个 `kt-aicoding` 仓库，并维护 catalog/README 一致性 |
 
 Goal prompt 已由独立仓库 [`kt-aicoding/skill-goal`](https://github.com/kt-aicoding/skill-goal) 维护，避免两个 Skill 竞争同一触发场景。
+
+`implementation-workflow` 是 `writing-plans`、`subagent-driven-development`、
+`executing-plans` 和 `finishing-a-development-branch` 的 Codex 原生合并版本。它保留
+三个实施阶段，但不复制 Claude Code 的 `TodoWrite`、强制 worktree、自动 commit 或
+每个小任务固定调用三名 Agent 等假设。
 
 ## 安装到 Codex
 
