@@ -34,7 +34,7 @@ This report stores aggregate session counts only. It does not include prompts, t
 
 ## Review signals
 
-### Implicit descriptions over 140 chars with at least 1 retained sessions
+### Implicit descriptions over 140 chars with at least 1 retained session
 
 No non-system implicit description at or above the review threshold exceeds 140 characters.
 
