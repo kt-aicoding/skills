@@ -56,6 +56,39 @@ gstack-openclaw-investigate
 gstack-openclaw-office-hours
 gstack-openclaw-retro
 
+# Overlap-prone command workflows with no retained usage evidence
+design-brief
+design-flow
+design-tokens
+frontend-design-principles
+grill-me
+gstack
+health
+playwright-interactive
+shape
+
+# Low-evidence UI specialists covered by broader frontend/design skills
+baseline-ui
+fixing-motion-performance
+layout
+optimize
+polish
+redesign-existing-projects
+tailwind-css-patterns
+tailwind-design-system
+ui-animation
+
+# Low-evidence specialist workflows with explicit user intent
+define-goal
+gh-address-comments
+information-architecture
+security-ownership-map
+security-review
+security-threat-model
+setup-browser-cookies
+sharp-edges
+vercel-cli-with-tokens
+
 # Low-frequency specialist workflows
 agents-sdk
 audit-context-building

@@ -70,6 +70,20 @@ def parse_args() -> argparse.Namespace:
         help="Sessions required for the frequent tier (default: 5).",
     )
     parser.add_argument(
+        "--description-review-threshold",
+        type=int,
+        default=1,
+        help="Sessions required before flagging a long implicit description (default: 1).",
+    )
+    parser.add_argument(
+        "--implicit-keep-manifest",
+        type=Path,
+        default=repository / "config" / "codex-implicit-keep-skills.txt",
+        help=(
+            "Newline-delimited implicit skills intentionally retained without usage evidence."
+        ),
+    )
+    parser.add_argument(
         "--format",
         choices=("markdown", "json"),
         default="markdown",
@@ -167,14 +181,45 @@ def usage_tier(sessions: int, frequent_threshold: int) -> str:
     return "no-evidence"
 
 
-def review_signal(skill: dict, usage: Usage, frequent_threshold: int) -> str:
+def read_name_manifest(path: Path) -> set[str]:
+    names: set[str] = set()
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        name = raw_line.split("#", 1)[0].strip()
+        if not name:
+            continue
+        if name in names:
+            raise RuntimeError(f"duplicate manifest entry: {name}")
+        names.add(name)
+    return names
+
+
+def skill_ownership(path: str) -> str:
+    normalized = path.replace("\\", "/")
+    if "/.codex/skills/.system/" in normalized:
+        return "system"
+    if "/.agents/skills/" in normalized:
+        return "shared"
+    return "user"
+
+
+def review_signal(
+    skill: dict,
+    usage: Usage,
+    frequent_threshold: int,
+    description_review_threshold: int,
+    implicit_keep: frozenset[str] = frozenset(),
+) -> str:
     count = len(usage.sessions)
     implicit = bool(skill["allow_implicit_invocation"])
-    if implicit and count >= frequent_threshold and len(skill["description"]) > 140:
-        return "shorten-frequent-description"
+    if implicit and count >= description_review_threshold and len(skill["description"]) > 140:
+        if skill_ownership(str(skill["path"])) == "system":
+            return "system-managed-description"
+        return "shorten-used-description"
     if not implicit and count >= frequent_threshold:
         return "review-explicit-only"
     if implicit and count == 0:
+        if skill.get("name") in implicit_keep:
+            return "keep-implicit-capability"
         return "review-unused-implicit"
     return "keep"
 
@@ -185,6 +230,16 @@ def build_report(args: argparse.Namespace) -> dict:
     audit = audit_module.audit(roots, args.config, False, 140)
     skills = audit["skills"]
     names = {skill["name"] for skill in skills}
+    implicit_keep_manifest = getattr(args, "implicit_keep_manifest", None)
+    implicit_keep = (
+        read_name_manifest(implicit_keep_manifest)
+        if implicit_keep_manifest is not None
+        else set()
+    )
+    unknown_implicit_keep = implicit_keep - names
+    if unknown_implicit_keep:
+        unknown = ", ".join(sorted(unknown_implicit_keep))
+        raise RuntimeError(f"implicit keep manifest contains unknown skills: {unknown}")
     usage = {name: Usage() for name in names}
 
     session_files = sorted(args.sessions_root.expanduser().glob("**/*.jsonl"))
@@ -207,6 +262,7 @@ def build_report(args: argparse.Namespace) -> dict:
         for name in evidence.file_read_skills:
             usage[name].file_read_sessions.add(evidence.session_id)
 
+    description_review_threshold = getattr(args, "description_review_threshold", 1)
     rows: list[dict[str, object]] = []
     for skill in skills:
         item = usage[skill["name"]]
@@ -223,8 +279,15 @@ def build_report(args: argparse.Namespace) -> dict:
                 "invocation": (
                     "implicit" if skill["allow_implicit_invocation"] else "explicit-only"
                 ),
+                "ownership": skill_ownership(str(skill["path"])),
                 "description_chars": len(skill["description"]),
-                "signal": review_signal(skill, item, args.frequent_threshold),
+                "signal": review_signal(
+                    skill,
+                    item,
+                    args.frequent_threshold,
+                    description_review_threshold,
+                    frozenset(implicit_keep),
+                ),
             }
         )
     rows.sort(key=lambda row: (-int(row["sessions"]), str(row["name"])))
@@ -232,6 +295,7 @@ def build_report(args: argparse.Namespace) -> dict:
     timestamps = sorted(session.timestamp for session in sessions if session.timestamp)
     tiers = Counter(str(row["tier"]) for row in rows)
     signals = Counter(str(row["signal"]) for row in rows)
+    implicit_rows = [row for row in rows if row["invocation"] == "implicit"]
     return {
         "summary": {
             "retained_sessions": len(sessions),
@@ -240,7 +304,14 @@ def build_report(args: argparse.Namespace) -> dict:
             "window_start": timestamps[0] if timestamps else None,
             "window_end": timestamps[-1] if timestamps else None,
             "installed_skills": len(skills),
+            "implicit_skills": len(implicit_rows),
+            "explicit_only_skills": len(skills) - len(implicit_rows),
+            "implicit_description_chars": sum(
+                int(row["description_chars"]) for row in implicit_rows
+            ),
             "frequent_threshold": args.frequent_threshold,
+            "description_review_threshold": description_review_threshold,
+            "implicit_keep_skills": len(implicit_keep),
             "tiers": dict(sorted(tiers.items())),
             "signals": dict(sorted(signals.items())),
         },
@@ -250,13 +321,14 @@ def build_report(args: argparse.Namespace) -> dict:
 
 def markdown_table(rows: list[dict[str, object]]) -> list[str]:
     lines = [
-        "| Skill | Sessions | Primary | Explicit | Reads | Policy | Description | Signal |",
-        "| --- | ---: | ---: | ---: | ---: | --- | ---: | --- |",
+        "| Skill | Sessions | Primary | Explicit | Reads | Policy | Owner | Description | Signal |",
+        "| --- | ---: | ---: | ---: | ---: | --- | --- | ---: | --- |",
     ]
     for row in rows:
         lines.append(
             "| {name} | {sessions} | {primary_sessions} | {explicit_sessions} | "
-            "{file_read_sessions} | {invocation} | {description_chars} | {signal} |".format(
+            "{file_read_sessions} | {invocation} | {ownership} | {description_chars} | "
+            "{signal} |".format(
                 **row
             )
         )
@@ -266,12 +338,21 @@ def markdown_table(rows: list[dict[str, object]]) -> list[str]:
 def render_markdown(report: dict) -> str:
     summary = report["summary"]
     rows = report["skills"]
+    review_session_label = (
+        "session" if summary["description_review_threshold"] == 1 else "sessions"
+    )
     frequent = [row for row in rows if row["tier"] == "frequent"]
     description_review = [
-        row for row in rows if row["signal"] == "shorten-frequent-description"
+        row for row in rows if row["signal"] == "shorten-used-description"
     ]
     policy_review = [row for row in rows if row["signal"] == "review-explicit-only"]
+    system_managed = [
+        row for row in rows if row["signal"] == "system-managed-description"
+    ]
     unused_implicit = [row for row in rows if row["signal"] == "review-unused-implicit"]
+    intentional_implicit = [
+        row for row in rows if row["signal"] == "keep-implicit-capability"
+    ]
 
     lines = [
         "# Codex Skill Usage Audit",
@@ -293,7 +374,11 @@ def render_markdown(report: dict) -> str:
         "## Summary",
         "",
         f"- Installed and enabled skills: {summary['installed_skills']}",
+        f"- Implicit skills: {summary['implicit_skills']}",
+        f"- Explicit-only skills: {summary['explicit_only_skills']}",
+        f"- Implicit description characters: {summary['implicit_description_chars']}",
         f"- Frequent threshold: {summary['frequent_threshold']} sessions",
+        f"- Intentional implicit keep list: {summary['implicit_keep_skills']}",
     ]
     for tier, count in summary["tiers"].items():
         lines.append(f"- {tier}: {count}")
@@ -301,11 +386,25 @@ def render_markdown(report: dict) -> str:
     lines.extend(["", "## Frequent skills", ""])
     lines.extend(markdown_table(frequent) if frequent else ["No frequent skills found."])
 
-    lines.extend(["", "## Review signals", "", "### Frequent descriptions over 140 chars", ""])
+    lines.extend(
+        [
+            "",
+            "## Review signals",
+            "",
+            (
+                "### Implicit descriptions over 140 chars with at least "
+                f"{summary['description_review_threshold']} retained {review_session_label}"
+            ),
+            "",
+        ]
+    )
     lines.extend(
         markdown_table(description_review)
         if description_review
-        else ["No frequent implicit descriptions exceed 140 characters."]
+        else [
+            "No non-system implicit description at or above the review threshold "
+            "exceeds 140 characters."
+        ]
     )
     lines.extend(["", "### Frequently used explicit-only skills", ""])
     lines.extend(
@@ -313,7 +412,17 @@ def render_markdown(report: dict) -> str:
         if policy_review
         else ["No explicit-only skill crossed the frequent threshold."]
     )
-    lines.extend(["", "### Implicit skills with no retained evidence", ""])
+    lines.extend(["", "### System-managed long descriptions", ""])
+    lines.extend(
+        markdown_table(system_managed)
+        if system_managed
+        else ["No used system-managed description exceeds 140 characters."]
+    )
+    lines.extend(["", "### Intentional implicit capabilities without retained evidence", ""])
+    lines.extend(
+        markdown_table(intentional_implicit) if intentional_implicit else ["None."]
+    )
+    lines.extend(["", "### Implicit skills with no retained evidence requiring review", ""])
     lines.extend(markdown_table(unused_implicit) if unused_implicit else ["None."])
 
     lines.extend(["", "## Complete inventory", ""])

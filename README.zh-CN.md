@@ -73,7 +73,9 @@ git diff --check
 CI 中把问题转成非零退出码。
 
 本机的低频专业 Skill 由 `config/codex-explicit-only-skills.txt` 分类管理。它们不会占用
-Codex 初始 Skill 目录预算，但仍可通过 `$skill-name` 调用：
+Codex 初始 Skill 目录预算，但仍可通过 `$skill-name` 调用。自动触发且暂时没有使用
+证据、但属于基础能力的例外集中记录在 `config/codex-implicit-keep-skills.txt`，避免审计
+反复误报，也避免为了追求零告警而关闭图像、截图、Figma 等自然路由：
 
 ```bash
 # 检查当前策略是否与清单一致
@@ -93,9 +95,32 @@ python3 scripts/manage-codex-skill-policy.py --restore
 python3 scripts/audit-codex-skill-usage.py
 ```
 
-它分别统计用户显式 `$skill` 和 Codex 读取 `SKILL.md` 的证据，并标记高频长描述、
-高频 explicit-only Skill，以及没有保留使用证据但仍自动注入的候选项。`no-evidence`
-仅表示当前保留日志没有证据，不代表从未使用。
+它分别统计用户显式 `$skill` 和 Codex 读取 `SKILL.md` 的证据，并标记任何至少命中一次
+但描述仍超过 140 字符的自动触发 Skill、高频 explicit-only Skill，以及没有保留使用
+证据但仍自动注入的候选项。报告会单列
+`codex-implicit-keep-skills.txt` 中有意保留的基础能力；`no-evidence` 仅表示当前保留日志
+没有证据，不代表从未使用。
+
+跨平台审计比较 `~/.claude/skills` 与当前启用的 Codex Skills，并根据版本化映射表判断
+哪些 CC Skill 已覆盖、应延后、应退休或确实需要迁移：
+
+```bash
+python3 scripts/audit-cc-codex-skills.py
+```
+
+结果写入 `reports/CC_CODEX_SKILL_PARITY.md`。不要直接全量复制 Claude Skills；这种做法
+会覆盖已经包含 Codex 原生策略和元数据的同名 Skill。
+
+高使用量 Skill 的简短触发描述由 `config/codex-skill-description-overrides.json` 管理。
+默认命令只检查安装副本和配置的源码，`--apply` 才会写入：
+
+```bash
+python3 scripts/manage-codex-skill-descriptions.py
+python3 scripts/manage-codex-skill-descriptions.py --apply
+```
+
+覆盖器支持普通和折叠式 YAML 描述；跨平台源码可保留兼容字段，同时从 Codex 安装
+副本移除明确配置的非原生字段。Skill 更新后重新运行检查即可发现回退。
 
 ## 设计原则
 

@@ -1,0 +1,111 @@
+{
+  "agent-productization": {
+    "description": "Productize local AI agent and RAG demos. Use for LangChain, LangGraph, AgentScope, Eino, CrewAI, browser agents, and agent web apps."
+  },
+  "anycap-cli": {
+    "description": "Use AnyCap CLI for image, video, music, media analysis, web search or crawl, Drive links, hosted pages, authentication, and configuration.",
+    "remove_installed_keys": ["compatibility"]
+  },
+  "browse": {
+    "description": "Use gstack’s headless browser for web QA: navigate, interact, inspect console or network, capture screenshots, and verify page state."
+  },
+  "brief-to-tasks": {
+    "description": "Turn a design brief into an ordered Markdown checklist of independently buildable vertical slices. Use for implementation task breakdowns."
+  },
+  "careful": {
+    "description": "Warn before destructive shell, database, Git, cloud, or filesystem operations. Use when commands could delete data or rewrite history."
+  },
+  "chatgpt-apps": {
+    "description": "Build ChatGPT Apps SDK projects with MCP servers and widget UIs. Use for tools, resources, bridge APIs, metadata, CSP, and scaffolds."
+  },
+  "cli-creator": {
+    "description": "Build Codex CLIs from APIs, OpenAPI specs, SDKs, curl, web apps, or scripts, with stable JSON output, auth, and companion Skills."
+  },
+  "cli-tooling-inventory": {
+    "description": "Inspect local CLIs and MCP tools. Use for availability, authentication, tool selection, runtimes, browser automation, and deployments."
+  },
+  "configure-custom-domain": {
+    "description": "Configure and verify custom domains for Vercel apps with Aliyun DNS. Use for DNS records, HTTPS, routing, aliases, and domain docs."
+  },
+  "deploy-to-vercel": {
+    "description": "Deploy apps and websites to Vercel. Use for preview or production deployments and requests to push an app live and return its URL."
+  },
+  "design-review": {
+    "description": "Review a built UI against its brief and codebase. Use for design critique, visual hierarchy, consistency, responsiveness, and accessibility."
+  },
+  "gh-fix-ci": {
+    "description": "Diagnose failing GitHub Actions PR checks with gh. Summarize logs, propose a fix, and implement only after explicit approval."
+  },
+  "gstack-upgrade": {
+    "description": "Upgrade the installed gstack safely. Use to detect install mode, update gstack, validate the result, and summarize release changes."
+  },
+  "figma-implement-design": {
+    "description": "Implement production UI from Figma with 1:1 fidelity. Use for Figma URLs, design-to-code, components, and matching existing design specs."
+  },
+  "fixing-accessibility": {
+    "description": "Audit and fix web accessibility. Use for ARIA, keyboard navigation, focus, contrast, forms, dialogs, interactive controls, and WCAG reviews."
+  },
+  "fixing-metadata": {
+    "description": "Audit and fix web metadata. Use for titles, canonical URLs, Open Graph, social cards, favicons, JSON-LD, and robots directives."
+  },
+  "find-bugs": {
+    "description": "Review current branch changes for correctness bugs, security vulnerabilities, regressions, and missing tests. Use for code review or audits."
+  },
+  "frontend-design": {
+    "description": "Build distinctive production web interfaces. Use for frontend components, pages, and apps needing polished, non-generic visual design."
+  },
+  "investigate": {
+    "description": "Investigate bugs and failures through reproduction, evidence, hypotheses, root cause, minimal fixes, and verification. Use before fixing."
+  },
+  "impeccable": {
+    "description": "Create polished, distinctive web interfaces. Use craft to build, teach for design context, or extract for reusable components and tokens."
+  },
+  "kevinten10-supabase": {
+    "description": "Use Kevin’s existing Supabase project for demos, migrations, schemas, and Vercel environment setup; do not create redundant demo projects."
+  },
+  "land-and-deploy": {
+    "description": "Merge a PR, wait for CI and deployment, then verify production health. Use for land, merge, deploy, or production verification requests."
+  },
+  "mcp-server-release": {
+    "description": "Validate and release MCP servers under $HOME/projects/mcp. Use for packaging, docs, transports, Inspector checks, and publishing."
+  },
+  "media-production-pipeline": {
+    "description": "Plan local image, video, audio, subtitle, voice, presentation, 3D, and social-publishing workflows across media tools and MCP servers."
+  },
+  "modern-python": {
+    "description": "Set up or modernize Python with uv, Ruff, and ty. Use for new projects, standalone scripts, or pip, Poetry, mypy, and Black migrations."
+  },
+  "open-gstack-browser": {
+    "description": "Launch the visible GStack Browser with its AI sidebar. Use when asked to open or control Chrome, a real browser, or the gstack browser."
+  },
+  "pdf": {
+    "description": "Read, create, or review PDFs where rendering matters. Use visual checks and Python PDF tools for extraction, editing, and generation."
+  },
+  "playwright": {
+    "description": "Automate a real browser with playwright-cli. Use for navigation, forms, screenshots, extraction, and terminal-driven UI-flow debugging."
+  },
+  "repo-readme-release": {
+    "description": "Prepare repositories for public release. Use for README, install commands, examples, privacy notes, validation, and push readiness."
+  },
+  "review": {
+    "description": "Review a PR diff before landing for correctness, SQL safety, trust boundaries, conditional side effects, regressions, and missing tests."
+  },
+  "security-best-practices": {
+    "description": "Review Python, JavaScript/TypeScript, or Go for secure defaults and security best practices. Use only when explicitly requested."
+  },
+  "screenshot": {
+    "description": "Capture desktop or system screenshots by screen, window, or region. Use when explicit screenshot requests need OS-level capture."
+  },
+  "vercel-composition-patterns": {
+    "description": "Apply scalable React composition. Use for boolean prop proliferation, compound components, render props, context, and reusable APIs."
+  },
+  "vercel-react-best-practices": {
+    "description": "Apply Vercel React and Next.js performance guidance. Use for components, data fetching, rendering, bundles, and performance refactors."
+  },
+  "web-design-guidelines": {
+    "description": "Apply web design, accessibility, responsiveness, and performance guidelines. Use when building or reviewing HTML, CSS, and web components."
+  },
+  "wrangler": {
+    "description": "Use Wrangler for Cloudflare Workers, KV, R2, D1, Queues, Workflows, AI, and related services. Load before running Wrangler commands."
+  }
+}

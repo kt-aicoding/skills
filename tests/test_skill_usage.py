@@ -26,6 +26,64 @@ usage_audit = load_script("audit_codex_skill_usage", "scripts/audit-codex-skill-
 
 
 class SkillUsagePrivacyTests(unittest.TestCase):
+    def test_single_session_long_implicit_description_is_actionable(self) -> None:
+        skill = {
+            "name": "used-once",
+            "allow_implicit_invocation": True,
+            "description": "x" * 141,
+            "path": "/Users/example/.codex/skills/used-once/SKILL.md",
+        }
+
+        self.assertEqual(
+            usage_audit.review_signal(
+                skill,
+                usage_audit.Usage(sessions={"session-1"}),
+                5,
+                1,
+            ),
+            "shorten-used-description",
+        )
+
+    def test_intentional_implicit_skill_is_not_repeatedly_flagged(self) -> None:
+        skill = {
+            "name": "core-capability",
+            "allow_implicit_invocation": True,
+            "description": "Core capability.",
+            "path": "/Users/example/.codex/skills/core-capability/SKILL.md",
+        }
+
+        self.assertEqual(
+            usage_audit.review_signal(
+                skill,
+                usage_audit.Usage(),
+                5,
+                2,
+                frozenset({"core-capability"}),
+            ),
+            "keep-implicit-capability",
+        )
+
+    def test_name_manifest_rejects_duplicates(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            path = Path(temporary_directory) / "manifest.txt"
+            path.write_text("alpha\n# note\nalpha\n", encoding="utf-8")
+
+            with self.assertRaisesRegex(RuntimeError, "duplicate manifest entry: alpha"):
+                usage_audit.read_name_manifest(path)
+
+    def test_system_skill_long_description_is_not_an_actionable_override(self) -> None:
+        skill = {
+            "allow_implicit_invocation": True,
+            "description": "x" * 200,
+            "path": "/Users/example/.codex/skills/.system/example/SKILL.md",
+        }
+        usage = usage_audit.Usage(sessions={"session-1", "session-2"})
+
+        self.assertEqual(
+            usage_audit.review_signal(skill, usage, 5, 2),
+            "system-managed-description",
+        )
+
     def test_report_contains_counts_without_session_content(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             temporary = Path(temporary_directory)
@@ -91,6 +149,12 @@ class SkillUsagePrivacyTests(unittest.TestCase):
             self.assertEqual(rows["beta"]["file_read_sessions"], 1)
             self.assertEqual(rows["alpha"]["sessions"], 1)
             self.assertEqual(rows["beta"]["sessions"], 1)
+            self.assertEqual(report["summary"]["implicit_skills"], 2)
+            self.assertEqual(report["summary"]["explicit_only_skills"], 0)
+            self.assertEqual(
+                report["summary"]["implicit_description_chars"],
+                len("Alpha test skill.") + len("Beta test skill."),
+            )
             for private_value in (
                 "private-session-id",
                 "PRIVATE_PROMPT_CONTENT",
@@ -98,6 +162,82 @@ class SkillUsagePrivacyTests(unittest.TestCase):
                 "/private/work",
             ):
                 self.assertNotIn(private_value, rendered)
+
+    def test_ignores_developer_messages_and_tool_outputs(self) -> None:
+        records = [
+            {
+                "type": "session_meta",
+                "payload": {
+                    "session_id": "session-1",
+                    "timestamp": "2026-07-12T00:00:00Z",
+                    "source": "cli",
+                },
+            },
+            {
+                "type": "response_item",
+                "payload": {
+                    "type": "message",
+                    "role": "developer",
+                    "content": [{"text": "$ignored-skill"}],
+                },
+            },
+            {
+                "type": "response_item",
+                "payload": {
+                    "type": "message",
+                    "role": "user",
+                    "content": [{"text": "Use $explicit-skill."}],
+                },
+            },
+            {
+                "type": "response_item",
+                "payload": {
+                    "type": "custom_tool_call",
+                    "input": "sed -n 1,200p /tmp/read-skill/SKILL.md",
+                },
+            },
+            {
+                "type": "response_item",
+                "payload": {
+                    "type": "custom_tool_call_output",
+                    "output": "/tmp/ignored-skill/SKILL.md",
+                },
+            },
+        ]
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            path = Path(temporary_directory) / "session.jsonl"
+            path.write_text(
+                "\n".join(json.dumps(record) for record in records) + "\n",
+                encoding="utf-8",
+            )
+            evidence = usage_audit.session_evidence(
+                path,
+                {"explicit-skill", "read-skill", "ignored-skill"},
+            )
+
+        self.assertIsNotNone(evidence)
+        assert evidence is not None
+        self.assertEqual(evidence.explicit_skills, frozenset({"explicit-skill"}))
+        self.assertEqual(evidence.file_read_skills, frozenset({"read-skill"}))
+
+    def test_detects_subagent_source(self) -> None:
+        record = {
+            "type": "session_meta",
+            "payload": {
+                "session_id": "session-2",
+                "timestamp": "2026-07-12T00:00:00Z",
+                "source": {"subagent": {"thread_spawn": {}}},
+            },
+        }
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            path = Path(temporary_directory) / "session.jsonl"
+            path.write_text(json.dumps(record) + "\n", encoding="utf-8")
+            evidence = usage_audit.session_evidence(path, set())
+
+        self.assertIsNotNone(evidence)
+        assert evidence is not None
+        self.assertTrue(evidence.is_subagent)
 
 
 if __name__ == "__main__":

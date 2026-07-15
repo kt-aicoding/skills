@@ -1,0 +1,14 @@
+# Skills in this manifest remain eligible for implicit invocation even when the
+# retained local session window has no usage evidence. Keep this list narrow.
+
+# Core media and operating-system capabilities
+imagegen
+screenshot
+
+# Strong domain intent where users should not need to know the Skill name
+chatgpt-apps
+figma-implement-design
+
+# Baseline web correctness checks worth routing automatically
+fixing-accessibility
+fixing-metadata
