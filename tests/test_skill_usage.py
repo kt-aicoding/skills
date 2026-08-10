@@ -26,6 +26,52 @@ usage_audit = load_script("audit_codex_skill_usage", "scripts/audit-codex-skill-
 
 
 class SkillUsagePrivacyTests(unittest.TestCase):
+    def test_classifies_repository_and_generated_skill_maintenance(self) -> None:
+        repository_skill = ROOT / "skills/session-workflow-retrospective/SKILL.md"
+        self.assertEqual(
+            usage_audit.skill_maintenance(repository_skill),
+            "repository-owned",
+        )
+
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            generated = Path(temporary_directory) / "SKILL.md"
+            generated.write_text(
+                "---\nname: generated\ndescription: Test.\n---\n"
+                "<!-- AUTO-GENERATED from a template — do not edit directly -->\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                usage_audit.skill_maintenance(generated),
+                "generated-upstream",
+            )
+            self.assertEqual(
+                usage_audit.body_action("generated-upstream"),
+                "change-upstream-template",
+            )
+
+    def test_strict_issues_cover_budget_policy_interface_and_owned_body(self) -> None:
+        report = {
+            "summary": {
+                "implicit_description_budget_ok": False,
+                "implicit_description_chars": 12_000,
+                "implicit_description_limit": 10_000,
+                "signals": {
+                    "review-unused-implicit": 2,
+                    "shorten-used-description": 1,
+                },
+                "missing_used_implicit_interfaces": 1,
+                "large_repository_owned_bodies": 1,
+            }
+        }
+
+        issues = usage_audit.strict_issues(report)
+
+        self.assertIn("implicit description budget exceeded: 12000 > 10000", issues)
+        self.assertIn("review-unused-implicit: 2", issues)
+        self.assertIn("shorten-used-description: 1", issues)
+        self.assertIn("missing used implicit interfaces: 1", issues)
+        self.assertIn("repository-owned bodies over 500 lines: 1", issues)
+
     def test_body_metrics_exclude_frontmatter(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             path = Path(temporary_directory) / "SKILL.md"
@@ -191,6 +237,9 @@ class SkillUsagePrivacyTests(unittest.TestCase):
                 report["summary"]["implicit_description_chars"],
                 len("Alpha test skill.") + len("Beta test skill."),
             )
+            self.assertEqual(report["summary"]["implicit_description_limit"], 10_000)
+            self.assertTrue(report["summary"]["implicit_description_budget_ok"])
+            self.assertEqual(report["summary"]["large_repository_owned_bodies"], 0)
             self.assertIn(
                 "at least 2 retained sessions missing complete UI metadata",
                 rendered,

@@ -4,9 +4,12 @@
 from __future__ import annotations
 
 import argparse
+import fcntl
+import hashlib
 import json
 import re
 import shutil
+import tempfile
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -135,6 +138,7 @@ HANDOFF_CONCEPTS = {
 }
 
 HANDOFF_FILE_RE = re.compile(r"(?:session.*(?:handoff|summary)|handoff|checkpoint)", re.IGNORECASE)
+CACHE_VERSION = 1
 
 PUBLIC_MCP_PROVIDERS = {
     "context7",
@@ -151,6 +155,7 @@ class ParseStats:
     files: int = 0
     records: int = 0
     malformed_lines: int = 0
+    cached_files: int = 0
 
 
 @dataclass
@@ -170,6 +175,135 @@ class ToolStats:
     sessions: dict[str, set[str]] = field(default_factory=lambda: defaultdict(set))
     surfaces: Counter[str] = field(default_factory=Counter)
     surface_sessions: dict[str, set[str]] = field(default_factory=lambda: defaultdict(set))
+
+
+def opaque_id(provider: str, value: object) -> str:
+    raw = f"{provider}:{value or 'unknown'}".encode()
+    return hashlib.sha256(raw).hexdigest()
+
+
+def cache_key(provider: str, path: Path) -> str:
+    return opaque_id(provider, path.resolve())
+
+
+def load_tool_cache(path: Path) -> dict[str, dict[str, object]]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    if not isinstance(payload, dict) or payload.get("version") != CACHE_VERSION:
+        return {}
+    entries = payload.get("entries")
+    return entries if isinstance(entries, dict) else {}
+
+
+def save_tool_cache(path: Path, entries: dict[str, dict[str, object]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path = path.with_suffix(path.suffix + ".lock")
+    with lock_path.open("a", encoding="utf-8") as lock:
+        lock_path.chmod(0o600)
+        fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+        merged_entries = load_tool_cache(path)
+        merged_entries.update(entries)
+        temporary: Path | None = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                encoding="utf-8",
+                dir=path.parent,
+                prefix=f".{path.name}.",
+                suffix=".tmp",
+                delete=False,
+            ) as handle:
+                json.dump(
+                    {"version": CACHE_VERSION, "entries": merged_entries},
+                    handle,
+                    sort_keys=True,
+                )
+                temporary = Path(handle.name)
+            temporary.chmod(0o600)
+            temporary.replace(path)
+        finally:
+            if temporary is not None:
+                temporary.unlink(missing_ok=True)
+            fcntl.flock(lock.fileno(), fcntl.LOCK_UN)
+
+
+def cached_file_evidence(
+    provider: str,
+    path: Path,
+    entries: dict[str, dict[str, object]] | None,
+) -> tuple[str, dict[str, object]] | None:
+    if entries is None:
+        return None
+    key = cache_key(provider, path)
+    evidence = entries.get(key)
+    if not isinstance(evidence, dict):
+        return None
+    try:
+        stat = path.stat()
+    except OSError:
+        return None
+    if evidence.get("size") != stat.st_size or evidence.get("mtime_ns") != stat.st_mtime_ns:
+        return None
+    return key, evidence
+
+
+def apply_file_evidence(tools: ToolStats, stats: ParseStats, evidence: dict[str, object]) -> bool:
+    stats.files += 1
+    stats.records += int(evidence.get("records", 0))
+    stats.malformed_lines += int(evidence.get("malformed_lines", 0))
+    stats.cached_files += 1
+    if not evidence.get("primary"):
+        return False
+    session = str(evidence.get("session") or "unknown")
+    calls = evidence.get("calls")
+    if isinstance(calls, dict):
+        for name, count in calls.items():
+            tools.calls[str(name)] += int(count)
+            tools.sessions[str(name)].add(session)
+    surfaces = evidence.get("surfaces")
+    if isinstance(surfaces, dict):
+        for name, count in surfaces.items():
+            tools.surfaces[str(name)] += int(count)
+            tools.surface_sessions[str(name)].add(session)
+    return True
+
+
+def merge_tool_stats_into(target: ToolStats, source: ToolStats) -> None:
+    target.calls.update(source.calls)
+    target.surfaces.update(source.surfaces)
+    for name, sessions in source.sessions.items():
+        target.sessions[name].update(sessions)
+    for name, sessions in source.surface_sessions.items():
+        target.surface_sessions[name].update(sessions)
+
+
+def file_evidence(
+    path: Path,
+    before: object,
+    primary: bool,
+    session: str,
+    tools: ToolStats,
+    records: int,
+    malformed_lines: int,
+) -> dict[str, object] | None:
+    try:
+        after = path.stat()
+    except OSError:
+        return None
+    if after.st_size != before.st_size or after.st_mtime_ns != before.st_mtime_ns:
+        return None
+    return {
+        "size": after.st_size,
+        "mtime_ns": after.st_mtime_ns,
+        "primary": primary,
+        "session": session,
+        "calls": dict(tools.calls),
+        "surfaces": dict(tools.surfaces),
+        "records": records,
+        "malformed_lines": malformed_lines,
+    }
 
 
 def parse_args() -> argparse.Namespace:
@@ -227,6 +361,20 @@ def parse_args() -> argparse.Namespace:
         type=int,
         default=3,
         help="Minimum primary sessions for a promotion signal (default: 3).",
+    )
+    parser.add_argument(
+        "--cache",
+        type=Path,
+        default=Path.home()
+        / ".cache"
+        / "session-workflow-retrospective"
+        / "tool-evidence-v1.json",
+        help="Local aggregate tool-evidence cache used for unchanged session files.",
+    )
+    parser.add_argument(
+        "--no-cache",
+        action="store_true",
+        help="Read every session file and do not update the aggregate cache.",
     )
     parser.add_argument("--format", choices=("markdown", "json"), default="markdown")
     parser.add_argument("--output", type=str, default="-", help="Output path or '-' for stdout.")
@@ -345,7 +493,8 @@ def flatten_strings(value: object) -> Iterable[str]:
 
 
 def add_tool_call(tool_stats: ToolStats, session: str, name: str, value: object) -> None:
-    safe_name = name if re.fullmatch(r"[A-Za-z0-9_.:-]{1,100}", name) else "unknown"
+    provider = mcp_provider(name)
+    safe_name = f"mcp__{provider}__tool" if provider is not None else "other-tool"
     tool_stats.surfaces[safe_name] += 1
     tool_stats.surface_sessions[safe_name].add(session)
     searchable = "\n".join(flatten_strings(value)).lower()
@@ -356,13 +505,32 @@ def add_tool_call(tool_stats: ToolStats, session: str, name: str, value: object)
             tool_stats.sessions[cli].add(session)
 
 
-def scan_codex_tools(root: Path, since: datetime | None) -> tuple[ToolStats, ParseStats, int]:
+def scan_codex_tools(
+    root: Path,
+    since: datetime | None,
+    cache_entries: dict[str, dict[str, object]] | None = None,
+    next_cache: dict[str, dict[str, object]] | None = None,
+) -> tuple[ToolStats, ParseStats, int]:
     tools = ToolStats()
     stats = ParseStats()
     primary_sessions = 0
     if not root.is_dir():
         return tools, stats, primary_sessions
     for path in sorted(root.glob("**/*.jsonl")):
+        cached = cached_file_evidence("codex", path, cache_entries)
+        if cached is not None:
+            key, evidence = cached
+            if apply_file_evidence(tools, stats, evidence):
+                primary_sessions += 1
+            if next_cache is not None:
+                next_cache[key] = evidence
+            continue
+        try:
+            before = path.stat()
+        except OSError:
+            continue
+        records_before = stats.records
+        malformed_before = stats.malformed_lines
         session_id = path.stem
         session_time = None
         is_subagent = False
@@ -389,16 +557,35 @@ def scan_codex_tools(root: Path, since: datetime | None) -> tuple[ToolStats, Par
             name = str(payload.get("name") or payload_type)
             value = payload.get("arguments", payload.get("input", {}))
             calls.append((name, value))
-        if is_subagent or not on_or_after(session_time, since) or not calls:
-            continue
-        primary_sessions += 1
-        session = f"codex:{session_id}"
-        for name, value in calls:
-            add_tool_call(tools, session, name, value)
+        primary = not is_subagent and on_or_after(session_time, since) and bool(calls)
+        session = opaque_id("codex", session_id)
+        file_tools = ToolStats()
+        if primary:
+            primary_sessions += 1
+            for name, value in calls:
+                add_tool_call(file_tools, session, name, value)
+            merge_tool_stats_into(tools, file_tools)
+        if next_cache is not None:
+            evidence = file_evidence(
+                path,
+                before,
+                primary,
+                session,
+                file_tools,
+                stats.records - records_before,
+                stats.malformed_lines - malformed_before,
+            )
+            if evidence is not None:
+                next_cache[cache_key("codex", path)] = evidence
     return tools, stats, primary_sessions
 
 
-def scan_claude_tools(root: Path, since: datetime | None) -> tuple[ToolStats, ParseStats, int]:
+def scan_claude_tools(
+    root: Path,
+    since: datetime | None,
+    cache_entries: dict[str, dict[str, object]] | None = None,
+    next_cache: dict[str, dict[str, object]] | None = None,
+) -> tuple[ToolStats, ParseStats, int]:
     tools = ToolStats()
     stats = ParseStats()
     primary_sessions = 0
@@ -407,7 +594,21 @@ def scan_claude_tools(root: Path, since: datetime | None) -> tuple[ToolStats, Pa
     for path in sorted(root.glob("**/*.jsonl")):
         if "subagents" in path.parts:
             continue
-        session = f"claude:{path.stem}"
+        cached = cached_file_evidence("claude", path, cache_entries)
+        if cached is not None:
+            key, evidence = cached
+            if apply_file_evidence(tools, stats, evidence):
+                primary_sessions += 1
+            if next_cache is not None:
+                next_cache[key] = evidence
+            continue
+        try:
+            before = path.stat()
+        except OSError:
+            continue
+        records_before = stats.records
+        malformed_before = stats.malformed_lines
+        session = opaque_id("claude", path.stem)
         included = False
         calls: list[tuple[str, object]] = []
         for record in iter_jsonl(path, stats):
@@ -426,11 +627,24 @@ def scan_claude_tools(root: Path, since: datetime | None) -> tuple[ToolStats, Pa
                 if isinstance(item, dict) and item.get("type") == "tool_use":
                     included = True
                     calls.append((str(item.get("name") or "tool_use"), item.get("input", {})))
-        if not included:
-            continue
-        primary_sessions += 1
-        for name, value in calls:
-            add_tool_call(tools, session, name, value)
+        file_tools = ToolStats()
+        if included:
+            primary_sessions += 1
+            for name, value in calls:
+                add_tool_call(file_tools, session, name, value)
+            merge_tool_stats_into(tools, file_tools)
+        if next_cache is not None:
+            evidence = file_evidence(
+                path,
+                before,
+                included,
+                session,
+                file_tools,
+                stats.records - records_before,
+                stats.malformed_lines - malformed_before,
+            )
+            if evidence is not None:
+                next_cache[cache_key("claude", path)] = evidence
     return tools, stats, primary_sessions
 
 
@@ -516,8 +730,35 @@ def scan_handoffs(roots: list[Path]) -> dict[str, object]:
 def build_report(args: argparse.Namespace) -> dict[str, object]:
     since = parse_since(args.since)
     patterns, history_stats = scan_histories(args, since)
-    codex_tools, codex_stats, codex_sessions = scan_codex_tools(args.codex_sessions, since)
-    claude_tools, claude_stats, claude_sessions = scan_claude_tools(args.claude_projects, since)
+    use_cache = since is None and not getattr(args, "no_cache", True)
+    cache_path = getattr(
+        args,
+        "cache",
+        Path.home()
+        / ".cache"
+        / "session-workflow-retrospective"
+        / "tool-evidence-v1.json",
+    )
+    cache_entries = load_tool_cache(cache_path) if use_cache else None
+    next_cache: dict[str, dict[str, object]] | None = (
+        dict(cache_entries or {}) if use_cache else None
+    )
+    codex_tools, codex_stats, codex_sessions = scan_codex_tools(
+        args.codex_sessions,
+        since,
+        cache_entries,
+        next_cache,
+    )
+    if use_cache and next_cache is not None:
+        save_tool_cache(cache_path, next_cache)
+    claude_tools, claude_stats, claude_sessions = scan_claude_tools(
+        args.claude_projects,
+        since,
+        cache_entries,
+        next_cache,
+    )
+    if use_cache and next_cache is not None:
+        save_tool_cache(cache_path, next_cache)
     tools = merge_tool_stats(codex_tools, claude_tools)
     roots = args.skill_root or [Path.home() / ".agents" / "skills", Path.home() / ".codex" / "skills"]
     skills = installed_skills(roots)
@@ -588,6 +829,7 @@ def build_report(args: argparse.Namespace) -> dict[str, object]:
             "codex_primary_tool_sessions": codex_sessions,
             "claude_session_files": claude_stats.files,
             "claude_primary_tool_sessions": claude_sessions,
+            "session_cache_hits": codex_stats.cached_files + claude_stats.cached_files,
             "handoff_documents": handoffs["documents"],
             "installed_skills": len(skills),
             "malformed_jsonl_lines": history_stats.malformed_lines
@@ -631,6 +873,7 @@ def render_markdown(report: dict[str, object]) -> str:
             f"- Claude primary session files scanned: {summary['claude_session_files']}; "
             f"sessions with tool calls: {summary['claude_primary_tool_sessions']}"
         ),
+        f"- Unchanged session files served from local aggregate cache: {summary['session_cache_hits']}",
         f"- Handoff/summary documents: {summary['handoff_documents']}",
         f"- Installed Skills discovered: {summary['installed_skills']}",
         f"- Malformed JSONL lines skipped: {summary['malformed_jsonl_lines']}",

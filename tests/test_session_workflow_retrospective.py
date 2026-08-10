@@ -28,6 +28,17 @@ analyzer = load_script()
 
 
 class SessionWorkflowRetrospectiveTests(unittest.TestCase):
+    def test_cache_writes_merge_instead_of_pruning_existing_entries(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            path = Path(temporary_directory) / "cache.json"
+            analyzer.save_tool_cache(path, {"first": {"size": 1}})
+            analyzer.save_tool_cache(path, {"second": {"size": 2}})
+
+            self.assertEqual(
+                set(analyzer.load_tool_cache(path)),
+                {"first", "second"},
+            )
+
     def test_installed_skills_include_top_level_symlinks(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)
@@ -207,9 +218,12 @@ class SessionWorkflowRetrospectiveTests(unittest.TestCase):
                 tool_inventory=inventory,
                 since=None,
                 candidate_threshold=1,
+                cache=root / "tool-cache.json",
+                no_cache=False,
             )
             report = analyzer.build_report(args)
             rendered = analyzer.render_markdown(report)
+            cached_report = analyzer.build_report(args)
 
             cli_rows = {row["name"]: row for row in report["cli_tools"]}
             category_rows = {row["name"]: row for row in report["categories"]}
@@ -228,6 +242,9 @@ class SessionWorkflowRetrospectiveTests(unittest.TestCase):
             self.assertEqual(report["summary"]["history_files"], 2)
             self.assertEqual(report["summary"]["codex_session_files"], 1)
             self.assertEqual(report["summary"]["claude_session_files"], 1)
+            self.assertEqual(report["summary"]["session_cache_hits"], 0)
+            self.assertEqual(cached_report["summary"]["session_cache_hits"], 2)
+            self.assertNotIn(temporary_directory, args.cache.read_text(encoding="utf-8"))
             self.assertEqual(
                 report["summary"]["window_start"],
                 "2027-01-15T08:00:00+00:00",
@@ -311,6 +328,15 @@ class SessionWorkflowRetrospectiveTests(unittest.TestCase):
         self.assertEqual(analyzer.mcp_provider("mcp__github__search"), "github")
         self.assertEqual(analyzer.mcp_provider("mcp__PRIVATE_ACCOUNT__search"), "custom")
         self.assertEqual(analyzer.mcp_provider("private-mcp-tool"), "custom")
+
+        tools = analyzer.ToolStats()
+        analyzer.add_tool_call(
+            tools,
+            "opaque-session",
+            "mcp__PRIVATE_ACCOUNT__search",
+            {"cmd": "gh --version"},
+        )
+        self.assertEqual(tools.surfaces, {"mcp__custom__tool": 1})
 
 
 if __name__ == "__main__":

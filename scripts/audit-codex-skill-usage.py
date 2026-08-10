@@ -18,6 +18,8 @@ from typing import Iterable
 EXPLICIT_SKILL_RE = re.compile(r"\$([a-z0-9][a-z0-9-]{0,63})\b")
 SKILL_FILE_RE = re.compile(r"(?:^|[/\\])([a-z0-9][a-z0-9-]{0,63})[/\\]SKILL\.md\b")
 INTERFACE_REVIEW_MIN_SESSIONS = 2
+BODY_REVIEW_LINES = 500
+DEFAULT_MAX_IMPLICIT_DESCRIPTION_CHARS = 10_000
 
 
 @dataclass
@@ -82,6 +84,23 @@ def parse_args() -> argparse.Namespace:
         default=repository / "config" / "codex-implicit-keep-skills.txt",
         help=(
             "Newline-delimited implicit skills intentionally retained without usage evidence."
+        ),
+    )
+    parser.add_argument(
+        "--max-implicit-description-chars",
+        type=int,
+        default=DEFAULT_MAX_IMPLICIT_DESCRIPTION_CHARS,
+        help=(
+            "Maximum aggregate implicit Skill description characters before strict "
+            "mode fails (default: 10000)."
+        ),
+    )
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help=(
+            "Exit non-zero for actionable policy, description, interface, context-budget, "
+            "or repository-owned body-size findings."
         ),
     )
     parser.add_argument(
@@ -203,6 +222,36 @@ def skill_ownership(path: str) -> str:
     return "user"
 
 
+def skill_maintenance(path: Path) -> str:
+    normalized = str(path).replace("\\", "/")
+    if "/.codex/skills/.system/" in normalized:
+        return "system-managed"
+
+    repository = Path(__file__).resolve().parent.parent
+    try:
+        path.resolve().relative_to(repository)
+        return "repository-owned"
+    except (OSError, ValueError):
+        pass
+
+    try:
+        head = path.read_text(encoding="utf-8", errors="replace")[:4096]
+    except OSError:
+        return "installed-upstream"
+    if "AUTO-GENERATED" in head and "do not edit directly" in head.lower():
+        return "generated-upstream"
+    return "installed-upstream"
+
+
+def body_action(maintenance: str) -> str:
+    return {
+        "repository-owned": "split-in-repository",
+        "generated-upstream": "change-upstream-template",
+        "installed-upstream": "change-upstream-source",
+        "system-managed": "system-managed",
+    }[maintenance]
+
+
 def skill_body_metrics(path: Path) -> tuple[int, int, int]:
     text = path.read_text(encoding="utf-8", errors="replace")
     lines = text.splitlines()
@@ -307,6 +356,7 @@ def build_report(args: argparse.Namespace) -> dict:
         skill_path = Path(str(skill["path"]))
         body_lines, body_words, body_chars = skill_body_metrics(skill_path)
         ui_fields = interface_fields(skill_path)
+        maintenance = skill_maintenance(skill_path)
         rows.append(
             {
                 "name": skill["name"],
@@ -324,6 +374,8 @@ def build_report(args: argparse.Namespace) -> dict:
                 "body_lines": body_lines,
                 "body_words": body_words,
                 "body_chars": body_chars,
+                "maintenance": maintenance,
+                "body_action": body_action(maintenance),
                 "interface_fields": sorted(ui_fields),
                 "interface_field_count": len(ui_fields),
                 "signal": review_signal(
@@ -344,7 +396,11 @@ def build_report(args: argparse.Namespace) -> dict:
     large_used_bodies = [
         row
         for row in implicit_rows
-        if int(row["sessions"]) >= 1 and int(row["body_lines"]) > 500
+        if int(row["sessions"]) >= 1
+        and int(row["body_lines"]) > BODY_REVIEW_LINES
+    ]
+    large_repository_owned_bodies = [
+        row for row in large_used_bodies if row["maintenance"] == "repository-owned"
     ]
     missing_used_interfaces = [
         row
@@ -353,6 +409,14 @@ def build_report(args: argparse.Namespace) -> dict:
         and row["ownership"] != "system"
         and int(row["interface_field_count"]) < 3
     ]
+    max_implicit_description_chars = getattr(
+        args,
+        "max_implicit_description_chars",
+        DEFAULT_MAX_IMPLICIT_DESCRIPTION_CHARS,
+    )
+    implicit_description_chars = sum(
+        int(row["description_chars"]) for row in implicit_rows
+    )
     return {
         "summary": {
             "retained_sessions": len(sessions),
@@ -363,10 +427,13 @@ def build_report(args: argparse.Namespace) -> dict:
             "installed_skills": len(skills),
             "implicit_skills": len(implicit_rows),
             "explicit_only_skills": len(skills) - len(implicit_rows),
-            "implicit_description_chars": sum(
-                int(row["description_chars"]) for row in implicit_rows
+            "implicit_description_chars": implicit_description_chars,
+            "implicit_description_limit": max_implicit_description_chars,
+            "implicit_description_budget_ok": (
+                implicit_description_chars <= max_implicit_description_chars
             ),
             "large_used_implicit_bodies": len(large_used_bodies),
+            "large_repository_owned_bodies": len(large_repository_owned_bodies),
             "missing_used_implicit_interfaces": len(missing_used_interfaces),
             "interface_review_min_sessions": INTERFACE_REVIEW_MIN_SESSIONS,
             "frequent_threshold": args.frequent_threshold,
@@ -397,13 +464,18 @@ def markdown_table(rows: list[dict[str, object]]) -> list[str]:
 
 def structure_table(rows: list[dict[str, object]]) -> list[str]:
     lines = [
-        "| Skill | Sessions | Owner | Body lines | Body words | Body chars | UI fields |",
-        "| --- | ---: | --- | ---: | ---: | ---: | ---: |",
+        (
+            "| Skill | Sessions | Owner | Maintenance | Body lines | Body words | "
+            "Body chars | UI fields | Next action |"
+        ),
+        "| --- | ---: | --- | --- | ---: | ---: | ---: | ---: | --- |",
     ]
     for row in rows:
         lines.append(
-            "| {name} | {sessions} | {ownership} | {body_lines} | {body_words} | "
-            "{body_chars} | {interface_field_count}/3 |".format(**row)
+            "| {name} | {sessions} | {ownership} | {maintenance} | {body_lines} | "
+            "{body_words} | {body_chars} | {interface_field_count}/3 | {body_action} |".format(
+                **row
+            )
         )
     return lines
 
@@ -432,7 +504,7 @@ def render_markdown(report: dict) -> str:
         for row in rows
         if row["invocation"] == "implicit"
         and int(row["sessions"]) >= 1
-        and int(row["body_lines"]) > 500
+        and int(row["body_lines"]) > BODY_REVIEW_LINES
     ]
     missing_used_interfaces = [
         row
@@ -465,8 +537,16 @@ def render_markdown(report: dict) -> str:
         f"- Installed and enabled skills: {summary['installed_skills']}",
         f"- Implicit skills: {summary['implicit_skills']}",
         f"- Explicit-only skills: {summary['explicit_only_skills']}",
-        f"- Implicit description characters: {summary['implicit_description_chars']}",
+        (
+            f"- Implicit description characters: {summary['implicit_description_chars']} "
+            f"(limit: {summary['implicit_description_limit']}; "
+            f"within budget: {str(summary['implicit_description_budget_ok']).lower()})"
+        ),
         f"- Used implicit bodies over 500 lines: {summary['large_used_implicit_bodies']}",
+        (
+            "- Repository-owned used implicit bodies over 500 lines: "
+            f"{summary['large_repository_owned_bodies']}"
+        ),
         (
             "- Implicit skills with at least "
             f"{interface_review_min_sessions} retained sessions missing complete UI metadata: "
@@ -541,10 +621,39 @@ def render_markdown(report: dict) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
+def strict_issues(report: dict) -> list[str]:
+    summary = report["summary"]
+    signals = summary["signals"]
+    issues: list[str] = []
+    if not summary["implicit_description_budget_ok"]:
+        issues.append(
+            "implicit description budget exceeded: "
+            f"{summary['implicit_description_chars']} > "
+            f"{summary['implicit_description_limit']}"
+        )
+    for signal in (
+        "shorten-used-description",
+        "review-explicit-only",
+        "review-unused-implicit",
+    ):
+        count = int(signals.get(signal, 0))
+        if count:
+            issues.append(f"{signal}: {count}")
+    missing_interfaces = int(summary["missing_used_implicit_interfaces"])
+    if missing_interfaces:
+        issues.append(f"missing used implicit interfaces: {missing_interfaces}")
+    large_owned_bodies = int(summary["large_repository_owned_bodies"])
+    if large_owned_bodies:
+        issues.append(f"repository-owned bodies over {BODY_REVIEW_LINES} lines: {large_owned_bodies}")
+    return issues
+
+
 def main() -> int:
     args = parse_args()
     if args.frequent_threshold < 1:
         raise SystemExit("--frequent-threshold must be at least 1")
+    if args.max_implicit_description_chars < 1:
+        raise SystemExit("--max-implicit-description-chars must be at least 1")
     report = build_report(args)
     rendered = (
         json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
@@ -557,6 +666,13 @@ def main() -> int:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(rendered, encoding="utf-8")
         print(f"Wrote {args.output}")
+    if args.strict:
+        issues = strict_issues(report)
+        if issues:
+            print("Strict usage audit failed:", file=sys.stderr)
+            for issue in issues:
+                print(f"  - {issue}", file=sys.stderr)
+            return 1
     return 0
 
 

@@ -19,6 +19,8 @@ Turn retained local work history into reusable capabilities without copying priv
      --output /tmp/session-workflow-retrospective.md
    ```
 
+   Unchanged tool-session files are read from a local aggregate cache under `~/.cache/session-workflow-retrospective/`. Use `--no-cache` for a deliberate full rescan. The cache contains only hashed file/session identifiers and aggregate counters.
+
 3. Compare high-frequency categories with installed Skills. Reuse or improve an existing Skill when it already owns the workflow.
 4. Classify each genuine gap using `references/promotion-rubric.md`. Prefer a bundled script for deterministic private-data aggregation, a CLI for portable deterministic operations, and MCP only for agent-native live tool access.
 5. Implement one evidence-backed improvement at a time. Keep private counts and project context out of public Skill bodies and repository catalogs.

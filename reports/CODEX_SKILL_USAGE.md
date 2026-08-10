@@ -6,16 +6,17 @@ This report stores aggregate session counts only. It does not include prompts, t
 
 ## Summary
 
-- Installed and enabled skills: 148
+- Installed and enabled skills: 156
 - Implicit skills: 53
-- Explicit-only skills: 95
-- Implicit description characters: 8506
+- Explicit-only skills: 103
+- Implicit description characters: 8297 (limit: 10000; within budget: true)
 - Used implicit bodies over 500 lines: 8
+- Repository-owned used implicit bodies over 500 lines: 0
 - Implicit skills with at least 2 retained sessions missing complete UI metadata: 0
 - Frequent threshold: 5 sessions
 - Intentional implicit keep list: 7
 - frequent: 23
-- no-evidence: 79
+- no-evidence: 87
 - rare: 22
 - used: 24
 
@@ -26,22 +27,22 @@ This report stores aggregate session counts only. It does not include prompts, t
 | anycap-cli | 50 | 50 | 0 | 50 | implicit | user | 138 | keep |
 | frontend-design | 43 | 43 | 0 | 43 | implicit | shared | 134 | keep |
 | playwright | 35 | 35 | 0 | 35 | implicit | user | 135 | keep |
-| web-design-guidelines | 26 | 26 | 0 | 26 | implicit | shared | 138 | keep |
+| web-design-guidelines | 27 | 27 | 0 | 27 | implicit | shared | 138 | keep |
 | imagegen | 25 | 25 | 0 | 25 | implicit | system | 570 | system-managed-description |
-| browse | 19 | 19 | 0 | 19 | implicit | shared | 133 | keep |
+| browse | 20 | 20 | 0 | 20 | implicit | shared | 133 | keep |
 | project-workspace-triage | 16 | 16 | 0 | 16 | implicit | user | 133 | keep |
 | careful | 13 | 13 | 0 | 13 | implicit | shared | 134 | keep |
-| cli-tooling-inventory | 13 | 13 | 0 | 13 | implicit | user | 343 | shorten-used-description |
+| cli-tooling-inventory | 13 | 13 | 0 | 13 | implicit | user | 134 | keep |
 | goal-prompt | 10 | 10 | 9 | 3 | implicit | shared | 135 | keep |
 | workspace-noise-cleanup | 10 | 10 | 0 | 10 | implicit | user | 130 | keep |
 | implementation-workflow | 9 | 9 | 0 | 9 | implicit | shared | 129 | keep |
 | skill-creator | 8 | 8 | 0 | 8 | implicit | system | 225 | system-managed-description |
 | cli-tooling-governance | 7 | 7 | 0 | 7 | implicit | shared | 128 | keep |
+| investigate | 7 | 7 | 0 | 7 | implicit | shared | 137 | keep |
 | mcp-surface-governance | 7 | 7 | 0 | 7 | implicit | shared | 121 | keep |
+| openai-docs | 7 | 7 | 0 | 7 | implicit | system | 447 | system-managed-description |
 | pdf | 7 | 7 | 0 | 7 | implicit | user | 133 | keep |
-| investigate | 6 | 6 | 0 | 6 | implicit | shared | 137 | keep |
 | kt-aicoding-registry | 6 | 6 | 0 | 6 | implicit | shared | 132 | keep |
-| openai-docs | 6 | 6 | 0 | 6 | implicit | system | 447 | system-managed-description |
 | configure-custom-domain | 5 | 5 | 0 | 5 | implicit | user | 131 | keep |
 | deploy-to-vercel | 5 | 5 | 0 | 5 | implicit | shared | 130 | keep |
 | gstack-upgrade | 5 | 5 | 0 | 5 | implicit | shared | 131 | keep |
@@ -51,9 +52,7 @@ This report stores aggregate session counts only. It does not include prompts, t
 
 ### Implicit descriptions over 140 chars with at least 1 retained session
 
-| Skill | Sessions | Primary | Explicit | Reads | Policy | Owner | Description | Signal |
-| --- | ---: | ---: | ---: | ---: | --- | --- | ---: | --- |
-| cli-tooling-inventory | 13 | 13 | 0 | 13 | implicit | user | 343 | shorten-used-description |
+No non-system implicit description at or above the review threshold exceeds 140 characters.
 
 ### Frequently used explicit-only skills
 
@@ -65,7 +64,7 @@ No explicit-only skill crossed the frequent threshold.
 | --- | ---: | ---: | ---: | ---: | --- | --- | ---: | --- |
 | imagegen | 25 | 25 | 0 | 25 | implicit | system | 570 | system-managed-description |
 | skill-creator | 8 | 8 | 0 | 8 | implicit | system | 225 | system-managed-description |
-| openai-docs | 6 | 6 | 0 | 6 | implicit | system | 447 | system-managed-description |
+| openai-docs | 7 | 7 | 0 | 7 | implicit | system | 447 | system-managed-description |
 | skill-installer | 2 | 2 | 0 | 2 | implicit | system | 225 | system-managed-description |
 | plugin-creator | 1 | 1 | 0 | 1 | implicit | system | 471 | system-managed-description |
 
@@ -85,16 +84,16 @@ None.
 
 ### Used implicit bodies over 500 lines
 
-| Skill | Sessions | Owner | Body lines | Body words | Body chars | UI fields |
-| --- | ---: | --- | ---: | ---: | ---: | ---: |
-| anycap-cli | 50 | user | 690 | 4438 | 31257 | 3/3 |
-| web-design-guidelines | 26 | shared | 1446 | 5253 | 38544 | 3/3 |
-| browse | 19 | shared | 745 | 4760 | 33454 | 3/3 |
-| investigate | 6 | shared | 741 | 5455 | 38129 | 3/3 |
-| open-gstack-browser | 3 | shared | 754 | 5473 | 37513 | 3/3 |
-| land-and-deploy | 2 | shared | 1570 | 11512 | 77779 | 3/3 |
-| wrangler | 2 | shared | 913 | 2385 | 17775 | 3/3 |
-| review | 1 | shared | 1447 | 10684 | 75131 | 0/3 |
+| Skill | Sessions | Owner | Maintenance | Body lines | Body words | Body chars | UI fields | Next action |
+| --- | ---: | --- | --- | ---: | ---: | ---: | ---: | --- |
+| anycap-cli | 50 | user | installed-upstream | 725 | 4785 | 33938 | 3/3 | change-upstream-source |
+| web-design-guidelines | 27 | shared | installed-upstream | 1446 | 5253 | 38544 | 3/3 | change-upstream-source |
+| browse | 20 | shared | generated-upstream | 745 | 4760 | 33454 | 3/3 | change-upstream-template |
+| investigate | 7 | shared | generated-upstream | 741 | 5455 | 38129 | 3/3 | change-upstream-template |
+| land-and-deploy | 3 | shared | generated-upstream | 1570 | 11512 | 77779 | 3/3 | change-upstream-template |
+| open-gstack-browser | 3 | shared | generated-upstream | 754 | 5473 | 37513 | 3/3 | change-upstream-template |
+| wrangler | 3 | shared | installed-upstream | 913 | 2385 | 17775 | 3/3 | change-upstream-source |
+| review | 1 | shared | generated-upstream | 1447 | 10684 | 75131 | 0/3 | change-upstream-template |
 
 ### Implicit skills with at least 2 retained sessions missing complete UI metadata
 
@@ -107,50 +106,50 @@ None.
 | anycap-cli | 50 | 50 | 0 | 50 | implicit | user | 138 | keep |
 | frontend-design | 43 | 43 | 0 | 43 | implicit | shared | 134 | keep |
 | playwright | 35 | 35 | 0 | 35 | implicit | user | 135 | keep |
-| web-design-guidelines | 26 | 26 | 0 | 26 | implicit | shared | 138 | keep |
+| web-design-guidelines | 27 | 27 | 0 | 27 | implicit | shared | 138 | keep |
 | imagegen | 25 | 25 | 0 | 25 | implicit | system | 570 | system-managed-description |
-| browse | 19 | 19 | 0 | 19 | implicit | shared | 133 | keep |
+| browse | 20 | 20 | 0 | 20 | implicit | shared | 133 | keep |
 | project-workspace-triage | 16 | 16 | 0 | 16 | implicit | user | 133 | keep |
 | careful | 13 | 13 | 0 | 13 | implicit | shared | 134 | keep |
-| cli-tooling-inventory | 13 | 13 | 0 | 13 | implicit | user | 343 | shorten-used-description |
+| cli-tooling-inventory | 13 | 13 | 0 | 13 | implicit | user | 134 | keep |
 | goal-prompt | 10 | 10 | 9 | 3 | implicit | shared | 135 | keep |
 | workspace-noise-cleanup | 10 | 10 | 0 | 10 | implicit | user | 130 | keep |
 | implementation-workflow | 9 | 9 | 0 | 9 | implicit | shared | 129 | keep |
 | skill-creator | 8 | 8 | 0 | 8 | implicit | system | 225 | system-managed-description |
 | cli-tooling-governance | 7 | 7 | 0 | 7 | implicit | shared | 128 | keep |
+| investigate | 7 | 7 | 0 | 7 | implicit | shared | 137 | keep |
 | mcp-surface-governance | 7 | 7 | 0 | 7 | implicit | shared | 121 | keep |
+| openai-docs | 7 | 7 | 0 | 7 | implicit | system | 447 | system-managed-description |
 | pdf | 7 | 7 | 0 | 7 | implicit | user | 133 | keep |
-| investigate | 6 | 6 | 0 | 6 | implicit | shared | 137 | keep |
 | kt-aicoding-registry | 6 | 6 | 0 | 6 | implicit | shared | 132 | keep |
-| openai-docs | 6 | 6 | 0 | 6 | implicit | system | 447 | system-managed-description |
 | configure-custom-domain | 5 | 5 | 0 | 5 | implicit | user | 131 | keep |
 | deploy-to-vercel | 5 | 5 | 0 | 5 | implicit | shared | 130 | keep |
 | gstack-upgrade | 5 | 5 | 0 | 5 | implicit | shared | 131 | keep |
 | skill-image | 5 | 5 | 0 | 5 | implicit | shared | 138 | keep |
 | design-review | 4 | 4 | 0 | 4 | implicit | shared | 140 | keep |
 | kevinten10-supabase | 4 | 4 | 0 | 4 | implicit | user | 138 | keep |
+| security-best-practices | 4 | 4 | 0 | 4 | implicit | user | 128 | keep |
 | session-workflow-retrospective | 4 | 4 | 0 | 4 | implicit | shared | 133 | keep |
 | vercel-react-best-practices | 4 | 4 | 0 | 4 | implicit | shared | 134 | keep |
+| wechat-local-history | 4 | 4 | 0 | 4 | explicit-only | user | 200 | keep |
 | agent-productization | 3 | 3 | 0 | 3 | implicit | user | 132 | keep |
 | codex-mcp-profiles | 3 | 3 | 0 | 3 | implicit | user | 125 | keep |
+| land-and-deploy | 3 | 3 | 0 | 3 | implicit | shared | 136 | keep |
 | mcp-server-release | 3 | 3 | 0 | 3 | implicit | user | 129 | keep |
 | media-production-pipeline | 3 | 3 | 0 | 3 | implicit | user | 134 | keep |
 | open-gstack-browser | 3 | 3 | 0 | 3 | implicit | shared | 135 | keep |
 | repo-readme-release | 3 | 3 | 0 | 3 | implicit | user | 131 | keep |
-| security-best-practices | 3 | 3 | 0 | 3 | implicit | user | 128 | keep |
-| wechat-local-history | 3 | 3 | 0 | 3 | explicit-only | user | 200 | keep |
+| source-backed-research | 3 | 3 | 0 | 3 | implicit | shared | 137 | keep |
+| wrangler | 3 | 3 | 0 | 3 | implicit | shared | 132 | keep |
 | brief-to-tasks | 2 | 2 | 0 | 2 | implicit | shared | 138 | keep |
 | find-bugs | 2 | 2 | 0 | 2 | implicit | shared | 140 | keep |
 | gh-fix-ci | 2 | 2 | 0 | 2 | implicit | user | 125 | keep |
 | jd-shopping | 2 | 2 | 0 | 2 | explicit-only | shared | 140 | keep |
-| land-and-deploy | 2 | 2 | 0 | 2 | implicit | shared | 136 | keep |
 | modern-python | 2 | 2 | 0 | 2 | implicit | shared | 135 | keep |
 | screenshot | 2 | 2 | 0 | 2 | implicit | user | 128 | keep |
 | setup-browser-cookies | 2 | 2 | 0 | 2 | explicit-only | shared | 300 | keep |
 | skill-installer | 2 | 2 | 0 | 2 | implicit | system | 225 | system-managed-description |
-| source-backed-research | 2 | 2 | 0 | 2 | implicit | shared | 137 | keep |
 | volcengine-ark-migration | 2 | 2 | 0 | 2 | explicit-only | user | 359 | keep |
-| wrangler | 2 | 2 | 0 | 2 | implicit | shared | 132 | keep |
 | audit-context-building | 1 | 1 | 0 | 1 | explicit-only | shared | 123 | keep |
 | checkpoint | 1 | 1 | 0 | 1 | explicit-only | shared | 444 | keep |
 | cli-creator | 1 | 1 | 0 | 1 | implicit | user | 129 | keep |
@@ -175,6 +174,14 @@ None.
 | visionos-design-guidelines | 1 | 1 | 0 | 1 | explicit-only | shared | 241 | keep |
 | agents-sdk | 0 | 0 | 0 | 0 | explicit-only | shared | 358 | keep |
 | android-design-guidelines | 0 | 0 | 0 | 0 | explicit-only | shared | 281 | keep |
+| anycap-ai-tool-seo | 0 | 0 | 0 | 0 | explicit-only | user | 694 | keep |
+| anycap-blog-production | 0 | 0 | 0 | 0 | explicit-only | user | 675 | keep |
+| anycap-deepresearch | 0 | 0 | 0 | 0 | explicit-only | user | 859 | keep |
+| anycap-gemini-omni-video-edit | 0 | 0 | 0 | 0 | explicit-only | user | 561 | keep |
+| anycap-human-interaction | 0 | 0 | 0 | 0 | explicit-only | user | 896 | keep |
+| anycap-media-production | 0 | 0 | 0 | 0 | explicit-only | user | 907 | keep |
+| anycap-social-meme-workflows | 0 | 0 | 0 | 0 | explicit-only | user | 431 | keep |
+| anycap-worldcup-predict | 0 | 0 | 0 | 0 | explicit-only | user | 1245 | keep |
 | autoplan | 0 | 0 | 0 | 0 | explicit-only | shared | 662 | keep |
 | baseline-ui | 0 | 0 | 0 | 0 | explicit-only | shared | 261 | keep |
 | benchmark | 0 | 0 | 0 | 0 | explicit-only | shared | 402 | keep |

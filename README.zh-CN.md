@@ -95,13 +95,15 @@ python3 scripts/manage-codex-skill-policy.py --restore
 
 ```bash
 python3 scripts/audit-codex-skill-usage.py
+python3 scripts/audit-codex-skill-usage.py --strict --output /tmp/codex-skill-usage.md
 ```
 
 它分别统计用户显式 `$skill` 和 Codex 读取 `SKILL.md` 的证据，并标记任何至少命中一次
 但描述仍超过 140 字符的自动触发 Skill、高频 explicit-only Skill，以及没有保留使用
 证据但仍自动注入的候选项。报告会单列
 `codex-implicit-keep-skills.txt` 中有意保留的基础能力；`no-evidence` 仅表示当前保留日志
-没有证据，不代表从未使用。
+没有证据，不代表从未使用。严格模式还会把隐式描述总量超过 10000 字符、待处理策略或
+描述信号、常用 Skill 的 UI 元数据缺失，以及仓库自有正文超过 500 行转成非零退出码。
 
 跨平台审计比较 `~/.claude/skills` 与当前启用的 Codex Skills，并根据版本化映射表判断
 哪些 CC Skill 已覆盖、应延后、应退休或确实需要迁移：
@@ -149,7 +151,9 @@ python3 scripts/manage-codex-skill-interfaces.py --apply
 
 使用量报告还会审计自动触发 Skill 的正文行数，并对至少出现在 2 个保留会话中的
 非系统 Skill 检查 UI 元数据完整性。正文超过 500 行的上游 Skill 作为渐进披露候选
-单列；在没有确认升级机制和引用拆分方案前，不要直接裁剪生成内容或系统 Skill。
+单列，并区分仓库自有、安装型上游、自动生成上游和系统管理文件。仓库自有正文需要
+拆到 `references/`；自动生成内容应修改上游模板；安装型或系统 Skill 在没有确认升级
+机制和权威源码前不得直接裁剪。
 
 ## 设计原则
 
