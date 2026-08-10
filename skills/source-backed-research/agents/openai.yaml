@@ -1,0 +1,4 @@
+interface:
+  display_name: "Source-Backed Research"
+  short_description: "Research with primary sources and explicit uncertainty"
+  default_prompt: "Use $source-backed-research to investigate this question with current primary sources, claim-level citations, and explicit uncertainty."

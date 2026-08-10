@@ -26,6 +26,41 @@ usage_audit = load_script("audit_codex_skill_usage", "scripts/audit-codex-skill-
 
 
 class SkillUsagePrivacyTests(unittest.TestCase):
+    def test_body_metrics_exclude_frontmatter(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            path = Path(temporary_directory) / "SKILL.md"
+            path.write_text(
+                "---\nname: example\ndescription: Example.\n---\n\n# Body\nTwo words.\n",
+                encoding="utf-8",
+            )
+
+            lines, words, chars = usage_audit.skill_body_metrics(path)
+
+            self.assertEqual(lines, 3)
+            self.assertEqual(words, 4)
+            self.assertEqual(chars, len("\n# Body\nTwo words."))
+
+    def test_detects_required_interface_fields_only(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            skill = Path(temporary_directory)
+            (skill / "agents").mkdir()
+            path = skill / "SKILL.md"
+            path.write_text("---\nname: example\ndescription: Example.\n---\n", encoding="utf-8")
+            (skill / "agents" / "openai.yaml").write_text(
+                "interface:\n"
+                '  display_name: "Example"\n'
+                '  icon_small: "./assets/icon.svg"\n'
+                '  default_prompt: "Use $example."\n'
+                "policy:\n"
+                "  allow_implicit_invocation: true\n",
+                encoding="utf-8",
+            )
+
+            self.assertEqual(
+                usage_audit.interface_fields(path),
+                frozenset({"display_name", "default_prompt"}),
+            )
+
     def test_single_session_long_implicit_description_is_actionable(self) -> None:
         skill = {
             "name": "used-once",
@@ -151,9 +186,14 @@ class SkillUsagePrivacyTests(unittest.TestCase):
             self.assertEqual(rows["beta"]["sessions"], 1)
             self.assertEqual(report["summary"]["implicit_skills"], 2)
             self.assertEqual(report["summary"]["explicit_only_skills"], 0)
+            self.assertEqual(report["summary"]["interface_review_min_sessions"], 2)
             self.assertEqual(
                 report["summary"]["implicit_description_chars"],
                 len("Alpha test skill.") + len("Beta test skill."),
+            )
+            self.assertIn(
+                "at least 2 retained sessions missing complete UI metadata",
+                rendered,
             )
             for private_value in (
                 "private-session-id",

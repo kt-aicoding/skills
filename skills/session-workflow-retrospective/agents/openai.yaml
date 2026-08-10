@@ -1,0 +1,6 @@
+interface:
+  display_name: "Session Workflow Retrospective"
+  short_description: "Analyze session patterns and tooling gaps privately"
+  default_prompt: "Use $session-workflow-retrospective to identify recurring workflows and evidence-backed Skill, CLI, or MCP improvements."
+policy:
+  allow_implicit_invocation: true

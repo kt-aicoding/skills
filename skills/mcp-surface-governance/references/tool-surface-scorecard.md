@@ -16,10 +16,20 @@
 | --- | --- | --- |
 | Tool name | Verb-object and domain-specific | Generic `run` or `execute` |
 | Inputs | Small typed schema | Free-form blobs without constraints |
-| Outputs | Structured actionable fields | Long unbounded logs |
+| Outputs | Structured actionable fields with bounded previews/logs | Long unbounded logs or inline media |
 | Permissions | Narrow, scoped, revocable | Broad account access by default |
 | Failure mode | Clear error category and retry guidance | Silent or ambiguous failures |
 | State | Explicit and inspectable | Hidden session assumptions |
+| File writes | Format-matching new targets; in-place behavior is explicit | Silent overwrite or extension/content mismatch |
+| Resource use | Schema and runtime agree on count, size, dimensions, and timeouts | Bounds exist only in docs or only in schema |
+
+## File-Producing Tools
+
+- Validate the final extension against the actual encoded format.
+- Refuse an existing target by default. Allow overwrite or in-place mutation only when the tool name, description, and result make that behavior explicit.
+- Validate all inputs and target collisions before expensive generation, decoding, rendering, or subprocess work.
+- For external converters, generate in an isolated temporary directory, verify the expected artifact exists, then publish it to the already-validated final path.
+- Return the saved path and concise metadata. Inline only bounded previews; direct the agent to the saved file for large media.
 
 ## Maturity Model
 
@@ -38,4 +48,6 @@
 | Duplicating mature provider CLIs | Use provider CLI and document commands |
 | Long-lived global MCPs for rare tasks | Enable task-specific tools only when needed |
 | Returning unbounded raw logs | Return structured summaries and links to logs |
+| Trusting JSON Schema as the only validation | Enforce the same limits at the runtime boundary |
+| Letting converters write directly over final targets | Convert in isolation, verify, then publish a new file |
 | Storing secrets in MCP examples | Use placeholders and explicit setup instructions |

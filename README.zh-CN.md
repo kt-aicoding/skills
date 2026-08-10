@@ -27,6 +27,8 @@ skills/
 | Implementation Workflow | `skills/implementation-workflow` | 将实施计划、可选子 Agent 执行、验证和安全 Git 收口整合成一个 Codex 原生工作流 |
 | MCP Surface Governance | `skills/mcp-surface-governance` | 判断能力是否适合暴露为 MCP server，设计小而安全的 tool surface |
 | KT AI Coding Registry | `skills/kt-aicoding-registry` | 判断 AI coding 资产应归属哪个 `kt-aicoding` 仓库，并维护 catalog/README 一致性 |
+| Session Workflow Retrospective | `skills/session-workflow-retrospective` | 聚合本地 Codex/Claude 会话与 handoff，识别可复用流程、已有 Skill 覆盖和 CLI/MCP 缺口 |
+| Source-Backed Research | `skills/source-backed-research` | 用一手来源、逐条证据、交叉核验和显式不确定性完成高时效或高风险研究 |
 
 Goal prompt 已由独立仓库 [`kt-aicoding/skill-goal`](https://github.com/kt-aicoding/skill-goal) 维护，避免两个 Skill 竞争同一触发场景。
 
@@ -111,6 +113,20 @@ python3 scripts/audit-cc-codex-skills.py
 结果写入 `reports/CC_CODEX_SKILL_PARITY.md`。不要直接全量复制 Claude Skills；这种做法
 会覆盖已经包含 Codex 原生策略和元数据的同名 Skill。
 
+会话流程复盘使用 `session-workflow-retrospective` 的聚合分析器。它读取本机保留的
+Codex/Claude 历史和显式指定的 handoff 根目录，只输出任务分类、会话/日期频次、
+CLI 可用性和 MCP provider 汇总，不输出 prompt、命令、路径或 session ID：
+
+```bash
+python3 skills/session-workflow-retrospective/scripts/analyze_session_workflows.py \
+  --handoff-root /path/to/projects \
+  --tool-inventory /path/to/tool-inventory.md \
+  --output /tmp/session-workflow-retrospective.md
+```
+
+报告中的频次只用于发现候选；先复用或优化现有 Skill，再按 Skill、bundled script、
+CLI、MCP 或 playbook 的边界决定是否新增能力。
+
 高使用量 Skill 的简短触发描述由 `config/codex-skill-description-overrides.json` 管理。
 默认命令只检查安装副本和配置的源码，`--apply` 才会写入：
 
@@ -121,6 +137,19 @@ python3 scripts/manage-codex-skill-descriptions.py --apply
 
 覆盖器支持普通和折叠式 YAML 描述；跨平台源码可保留兼容字段，同时从 Codex 安装
 副本移除明确配置的非原生字段。Skill 更新后重新运行检查即可发现回退。
+
+高使用量 Skill 的 Codex 列表元数据由 `config/codex-skill-interface-overrides.json`
+管理。管理器补齐 `display_name`、25–64 字符的 `short_description`，以及必须包含
+`$skill-name` 的 `default_prompt`，同时保留现有 policy 和图标字段：
+
+```bash
+python3 scripts/manage-codex-skill-interfaces.py
+python3 scripts/manage-codex-skill-interfaces.py --apply
+```
+
+使用量报告还会审计自动触发 Skill 的正文行数，并对至少出现在 2 个保留会话中的
+非系统 Skill 检查 UI 元数据完整性。正文超过 500 行的上游 Skill 作为渐进披露候选
+单列；在没有确认升级机制和引用拆分方案前，不要直接裁剪生成内容或系统 Skill。
 
 ## 设计原则
 

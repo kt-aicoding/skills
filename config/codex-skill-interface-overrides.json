@@ -1,0 +1,82 @@
+{
+  "anycap-cli": {
+    "display_name": "AnyCap CLI",
+    "short_description": "Create, analyze, search, and share media",
+    "default_prompt": "Use $anycap-cli to create or analyze media, search the web, and deliver a shareable result."
+  },
+  "brief-to-tasks": {
+    "display_name": "Brief to Tasks",
+    "short_description": "Turn design briefs into buildable task slices",
+    "default_prompt": "Use $brief-to-tasks to convert this design brief into an ordered implementation checklist."
+  },
+  "browse": {
+    "display_name": "GStack Browser QA",
+    "short_description": "Run fast headless browser QA with evidence",
+    "default_prompt": "Use $browse to test this web flow, inspect failures, and report evidence."
+  },
+  "careful": {
+    "display_name": "Careful Operations",
+    "short_description": "Guard destructive commands and production changes",
+    "default_prompt": "Use $careful to review risky operations and add the appropriate safety checks."
+  },
+  "deploy-to-vercel": {
+    "display_name": "Deploy to Vercel",
+    "short_description": "Create preview and production Vercel deployments",
+    "default_prompt": "Use $deploy-to-vercel to deploy this application and return the verified Vercel URL."
+  },
+  "design-review": {
+    "display_name": "Design Review",
+    "short_description": "Review hierarchy responsiveness and accessibility",
+    "default_prompt": "Use $design-review to critique this built interface against its brief and codebase."
+  },
+  "find-bugs": {
+    "display_name": "Find Bugs",
+    "short_description": "Audit branch changes for bugs regressions and risks",
+    "default_prompt": "Use $find-bugs to inspect the current branch for concrete bugs, regressions, vulnerabilities, and missing tests."
+  },
+  "frontend-design": {
+    "display_name": "Frontend Design",
+    "short_description": "Build distinctive production web interfaces",
+    "default_prompt": "Use $frontend-design to build a polished, distinctive production interface for this project."
+  },
+  "gstack-upgrade": {
+    "display_name": "Upgrade GStack",
+    "short_description": "Upgrade and verify the installed GStack",
+    "default_prompt": "Use $gstack-upgrade to update GStack safely and summarize the verified result."
+  },
+  "investigate": {
+    "display_name": "Root Cause Investigation",
+    "short_description": "Debug failures systematically before fixing them",
+    "default_prompt": "Use $investigate to reproduce this failure, identify its root cause, and verify a minimal fix."
+  },
+  "land-and-deploy": {
+    "display_name": "Land and Deploy",
+    "short_description": "Merge PRs and verify CI deployment and production",
+    "default_prompt": "Use $land-and-deploy to merge the ready PR, wait for CI and deployment, and verify production health."
+  },
+  "modern-python": {
+    "display_name": "Modern Python",
+    "short_description": "Modernize Python projects with uv Ruff and ty",
+    "default_prompt": "Use $modern-python to set up or modernize this Python project with uv, Ruff, and ty."
+  },
+  "open-gstack-browser": {
+    "display_name": "Open GStack Browser",
+    "short_description": "Launch visible Chromium with the GStack sidebar",
+    "default_prompt": "Use $open-gstack-browser to launch the visible browser and prepare it for interactive work."
+  },
+  "vercel-react-best-practices": {
+    "display_name": "Vercel React Best Practices",
+    "short_description": "Improve React and Next.js performance patterns",
+    "default_prompt": "Use $vercel-react-best-practices to review and improve this React or Next.js implementation."
+  },
+  "web-design-guidelines": {
+    "display_name": "Web Design Guidelines",
+    "short_description": "Apply accessible responsive web design standards",
+    "default_prompt": "Use $web-design-guidelines to review and improve this web interface against platform standards."
+  },
+  "wrangler": {
+    "display_name": "Cloudflare Wrangler",
+    "short_description": "Manage Cloudflare Workers storage and services",
+    "default_prompt": "Use $wrangler to manage this Cloudflare Workers project with the correct CLI workflow."
+  }
+}

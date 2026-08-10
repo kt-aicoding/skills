@@ -17,6 +17,7 @@ from typing import Iterable
 
 EXPLICIT_SKILL_RE = re.compile(r"\$([a-z0-9][a-z0-9-]{0,63})\b")
 SKILL_FILE_RE = re.compile(r"(?:^|[/\\])([a-z0-9][a-z0-9-]{0,63})[/\\]SKILL\.md\b")
+INTERFACE_REVIEW_MIN_SESSIONS = 2
 
 
 @dataclass
@@ -202,6 +203,42 @@ def skill_ownership(path: str) -> str:
     return "user"
 
 
+def skill_body_metrics(path: Path) -> tuple[int, int, int]:
+    text = path.read_text(encoding="utf-8", errors="replace")
+    lines = text.splitlines()
+    body = lines
+    if lines and lines[0].strip() == "---":
+        try:
+            end = next(
+                index for index, line in enumerate(lines[1:], 1) if line.strip() == "---"
+            )
+            body = lines[end + 1 :]
+        except StopIteration:
+            pass
+    body_text = "\n".join(body)
+    return len(body), len(body_text.split()), len(body_text)
+
+
+def interface_fields(skill_path: Path) -> frozenset[str]:
+    metadata = skill_path.parent / "agents" / "openai.yaml"
+    if not metadata.is_file():
+        return frozenset()
+    lines = metadata.read_text(encoding="utf-8", errors="replace").splitlines()
+    required = {"display_name", "short_description", "default_prompt"}
+    for index, line in enumerate(lines):
+        if not re.match(r"^interface:\s*(?:#.*)?$", line):
+            continue
+        found: set[str] = set()
+        for child in lines[index + 1 :]:
+            if child and not child[0].isspace():
+                break
+            match = re.match(r"^\s+([A-Za-z0-9_-]+):", child)
+            if match and match.group(1) in required:
+                found.add(match.group(1))
+        return frozenset(found)
+    return frozenset()
+
+
 def review_signal(
     skill: dict,
     usage: Usage,
@@ -267,6 +304,9 @@ def build_report(args: argparse.Namespace) -> dict:
     for skill in skills:
         item = usage[skill["name"]]
         count = len(item.sessions)
+        skill_path = Path(str(skill["path"]))
+        body_lines, body_words, body_chars = skill_body_metrics(skill_path)
+        ui_fields = interface_fields(skill_path)
         rows.append(
             {
                 "name": skill["name"],
@@ -281,6 +321,11 @@ def build_report(args: argparse.Namespace) -> dict:
                 ),
                 "ownership": skill_ownership(str(skill["path"])),
                 "description_chars": len(skill["description"]),
+                "body_lines": body_lines,
+                "body_words": body_words,
+                "body_chars": body_chars,
+                "interface_fields": sorted(ui_fields),
+                "interface_field_count": len(ui_fields),
                 "signal": review_signal(
                     skill,
                     item,
@@ -296,6 +341,18 @@ def build_report(args: argparse.Namespace) -> dict:
     tiers = Counter(str(row["tier"]) for row in rows)
     signals = Counter(str(row["signal"]) for row in rows)
     implicit_rows = [row for row in rows if row["invocation"] == "implicit"]
+    large_used_bodies = [
+        row
+        for row in implicit_rows
+        if int(row["sessions"]) >= 1 and int(row["body_lines"]) > 500
+    ]
+    missing_used_interfaces = [
+        row
+        for row in implicit_rows
+        if int(row["sessions"]) >= INTERFACE_REVIEW_MIN_SESSIONS
+        and row["ownership"] != "system"
+        and int(row["interface_field_count"]) < 3
+    ]
     return {
         "summary": {
             "retained_sessions": len(sessions),
@@ -309,6 +366,9 @@ def build_report(args: argparse.Namespace) -> dict:
             "implicit_description_chars": sum(
                 int(row["description_chars"]) for row in implicit_rows
             ),
+            "large_used_implicit_bodies": len(large_used_bodies),
+            "missing_used_implicit_interfaces": len(missing_used_interfaces),
+            "interface_review_min_sessions": INTERFACE_REVIEW_MIN_SESSIONS,
             "frequent_threshold": args.frequent_threshold,
             "description_review_threshold": description_review_threshold,
             "implicit_keep_skills": len(implicit_keep),
@@ -335,9 +395,23 @@ def markdown_table(rows: list[dict[str, object]]) -> list[str]:
     return lines
 
 
+def structure_table(rows: list[dict[str, object]]) -> list[str]:
+    lines = [
+        "| Skill | Sessions | Owner | Body lines | Body words | Body chars | UI fields |",
+        "| --- | ---: | --- | ---: | ---: | ---: | ---: |",
+    ]
+    for row in rows:
+        lines.append(
+            "| {name} | {sessions} | {ownership} | {body_lines} | {body_words} | "
+            "{body_chars} | {interface_field_count}/3 |".format(**row)
+        )
+    return lines
+
+
 def render_markdown(report: dict) -> str:
     summary = report["summary"]
     rows = report["skills"]
+    interface_review_min_sessions = int(summary["interface_review_min_sessions"])
     review_session_label = (
         "session" if summary["description_review_threshold"] == 1 else "sessions"
     )
@@ -352,6 +426,21 @@ def render_markdown(report: dict) -> str:
     unused_implicit = [row for row in rows if row["signal"] == "review-unused-implicit"]
     intentional_implicit = [
         row for row in rows if row["signal"] == "keep-implicit-capability"
+    ]
+    large_used_bodies = [
+        row
+        for row in rows
+        if row["invocation"] == "implicit"
+        and int(row["sessions"]) >= 1
+        and int(row["body_lines"]) > 500
+    ]
+    missing_used_interfaces = [
+        row
+        for row in rows
+        if row["invocation"] == "implicit"
+        and int(row["sessions"]) >= interface_review_min_sessions
+        and row["ownership"] != "system"
+        and int(row["interface_field_count"]) < 3
     ]
 
     lines = [
@@ -377,6 +466,12 @@ def render_markdown(report: dict) -> str:
         f"- Implicit skills: {summary['implicit_skills']}",
         f"- Explicit-only skills: {summary['explicit_only_skills']}",
         f"- Implicit description characters: {summary['implicit_description_chars']}",
+        f"- Used implicit bodies over 500 lines: {summary['large_used_implicit_bodies']}",
+        (
+            "- Implicit skills with at least "
+            f"{interface_review_min_sessions} retained sessions missing complete UI metadata: "
+            f"{summary['missing_used_implicit_interfaces']}"
+        ),
         f"- Frequent threshold: {summary['frequent_threshold']} sessions",
         f"- Intentional implicit keep list: {summary['implicit_keep_skills']}",
     ]
@@ -424,6 +519,22 @@ def render_markdown(report: dict) -> str:
     )
     lines.extend(["", "### Implicit skills with no retained evidence requiring review", ""])
     lines.extend(markdown_table(unused_implicit) if unused_implicit else ["None."])
+
+    lines.extend(["", "## Structure signals", "", "### Used implicit bodies over 500 lines", ""])
+    lines.extend(structure_table(large_used_bodies) if large_used_bodies else ["None."])
+    lines.extend(
+        [
+            "",
+            (
+                "### Implicit skills with at least "
+                f"{interface_review_min_sessions} retained sessions missing complete UI metadata"
+            ),
+            "",
+        ]
+    )
+    lines.extend(
+        structure_table(missing_used_interfaces) if missing_used_interfaces else ["None."]
+    )
 
     lines.extend(["", "## Complete inventory", ""])
     lines.extend(markdown_table(rows))

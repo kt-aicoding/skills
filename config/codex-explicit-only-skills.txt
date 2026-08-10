@@ -98,9 +98,11 @@ firecrawl-build-search
 full-output-enforcement
 jd-shopping
 jupyter-notebook
+print-hp-m1005-usb
 replicate
 speech
 sred-work-summary
+submit-12315-complaint
 taobao-shopping
 transcribe
 transformers-js

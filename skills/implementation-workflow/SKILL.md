@@ -105,5 +105,7 @@ Report:
 - verification commands and results;
 - branch, commit, PR, or deployment state when applicable;
 - unresolved risks, blockers, and unrelated dirty-worktree changes.
+- when work remains, the authoritative resume source, first next action or command, and the exact
+  user input or external-state change needed for any blocker.
 
 Never claim completion from an implementer report alone. Verify the actual artifacts and evidence.

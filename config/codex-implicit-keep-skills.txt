@@ -8,6 +8,7 @@ screenshot
 # Strong domain intent where users should not need to know the Skill name
 chatgpt-apps
 figma-implement-design
+source-backed-research
 
 # Baseline web correctness checks worth routing automatically
 fixing-accessibility

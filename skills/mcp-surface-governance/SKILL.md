@@ -13,8 +13,9 @@ Use this skill to keep MCP servers narrow, explicit, and useful to coding agents
 2. Prefer CLI when the workflow is cloud deployment, billing/resource inspection, GitHub operations, database administration, or deterministic batch work.
 3. Use MCP only when an agent needs live tool access during reasoning, such as current docs, browser automation, code context, search, or project indexing.
 4. Design a small tool surface: clear verb-object names, typed inputs, structured outputs, scoped auth, and explicit failure modes.
-5. Keep global/default MCP small. Enable rare or broad provider MCPs only for task-specific reasons.
-6. Keep public examples sanitized: no tokens, keys, cookies, private paths, account secrets, or private project context.
+5. For tools that read or write files, define accepted formats, size/count limits, overwrite semantics, and whether the operation is in-place. Write external-converter output to an isolated temporary location before publishing a new final file.
+6. Keep global/default MCP small. Enable rare or broad provider MCPs only for task-specific reasons.
+7. Keep public examples sanitized: no tokens, keys, cookies, private paths, account secrets, or private project context.
 
 ## Default Boundary
 
@@ -31,6 +32,8 @@ Before committing MCP governance or server changes:
 - Confirm the tool surface is smaller than the underlying API.
 - Confirm auth is scoped, revocable, and documented.
 - Confirm outputs are structured enough for agent use.
+- Confirm schemas and runtime validation enforce justified string, item-count, byte-size, dimension, timeout, and output-log bounds.
+- Confirm file-producing tools require format-matching extensions and refuse existing targets unless overwrite or in-place mutation is the tool's explicit contract.
 - Run a secret/path scan for public docs and examples.
 - Run `git diff --check`.
 - If server code is added, run the smallest local startup or tool-list validation.

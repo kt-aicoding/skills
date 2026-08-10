@@ -34,6 +34,7 @@ Use only the template needed for the active phase.
 - [ ] Targeted and integration checks pass.
 - [ ] Documentation and migration impact is resolved.
 - [ ] Git state and remaining blockers are reported.
+- [ ] Incomplete work has an authoritative resume source and a concrete first next action.
 ```
 
 ## Implementer Request
