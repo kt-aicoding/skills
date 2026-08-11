@@ -17,7 +17,8 @@ Use this skill to keep MCP servers narrow, explicit, and useful to coding agents
 6. For provider-controlled downloads, check declared size when available, enforce the same byte limit while streaming, use exclusive output files, and remove partial files on failure. Never echo signed URLs or query-string credentials from transport exceptions.
 7. For local file and Base64 inputs, reject unsupported formats and oversize metadata before reading or decoding, then re-check streamed/read/decoded bytes to cover races and misleading metadata.
 8. Keep global/default MCP small. Enable rare or broad provider MCPs only for task-specific reasons.
-9. Keep public examples sanitized: no tokens, keys, cookies, private paths, account secrets, or private project context.
+9. Scan every committed dependency manifest and lock format used by the server, including transitive resolution where supported. Prefer a patched parent BOM or framework release over piecemeal component overrides.
+10. Keep public examples sanitized: no tokens, keys, cookies, private paths, account secrets, or private project context.
 
 ## Default Boundary
 
@@ -38,6 +39,7 @@ Before committing MCP governance or server changes:
 - Confirm file-producing tools require format-matching extensions and refuse existing targets unless overwrite or in-place mutation is the tool's explicit contract.
 - Confirm remote responses are streamed under runtime byte limits, partial output is cleaned up, and transport errors cannot expose credential-bearing URLs.
 - Confirm local files are bounded before and during access, and Base64 inputs are size-estimated before strict decoding with an actual decoded-size check.
+- Scan all Python, Node, JVM, container, and other committed dependency sources in scope; treat a real vulnerability as an error, while distinguishing registry/network failures from code failures.
 - Run a secret/path scan for public docs and examples.
 - Run `git diff --check`.
 - If server code is added, run the smallest local startup or tool-list validation.

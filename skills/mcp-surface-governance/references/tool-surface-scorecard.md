@@ -23,6 +23,7 @@
 | File writes | Format-matching new targets; in-place behavior is explicit | Silent overwrite or extension/content mismatch |
 | Remote I/O | Streamed under byte limits; partial output cleaned up | Whole response buffered or half-written files retained |
 | Resource use | Schema and runtime agree on count, size, dimensions, and timeouts | Bounds exist only in docs or only in schema |
+| Supply chain | All manifests/locks scanned; patched parent BOM preferred | Only the primary lock scanned or vulnerable children overridden inconsistently |
 
 ## File-Producing Tools
 
@@ -59,4 +60,6 @@
 | Echoing transport exceptions containing signed URLs | Return a bounded error category without the request URL |
 | Reading a local asset after only a path check | Validate format/size first and cap actual bytes during access |
 | Decoding unbounded or permissive Base64 | Pre-check encoded length, decode strictly, then check decoded size |
+| Scanning only one package ecosystem | Scan every committed lock/manifest and resolve transitive JVM/BOM dependencies when supported |
+| Pinning many child libraries around a vulnerable framework BOM | Upgrade to the patched parent/BOM release, then verify the resolved dependency tree |
 | Storing secrets in MCP examples | Use placeholders and explicit setup instructions |
