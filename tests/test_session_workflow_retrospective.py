@@ -11,11 +11,15 @@ from types import SimpleNamespace
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SCRIPT = ROOT / "skills/session-workflow-retrospective/scripts/analyze_session_workflows.py"
+SCRIPT = (
+    ROOT / "skills/session-workflow-retrospective/scripts/analyze_session_workflows.py"
+)
 
 
 def load_script():
-    spec = importlib.util.spec_from_file_location("session_workflow_retrospective", SCRIPT)
+    spec = importlib.util.spec_from_file_location(
+        "session_workflow_retrospective", SCRIPT
+    )
     if spec is None or spec.loader is None:
         raise RuntimeError("cannot load retrospective analyzer")
     module = importlib.util.module_from_spec(spec)
@@ -178,7 +182,8 @@ class SessionWorkflowRetrospectiveTests(unittest.TestCase):
                 },
             ]
             (codex_sessions / "rollout.jsonl").write_text(
-                "\n".join(json.dumps(record) for record in codex_records) + "\nBROKEN\n",
+                "\n".join(json.dumps(record) for record in codex_records)
+                + "\nBROKEN\n",
                 encoding="utf-8",
             )
 
@@ -191,7 +196,9 @@ class SessionWorkflowRetrospectiveTests(unittest.TestCase):
                             {
                                 "type": "tool_use",
                                 "name": "Bash",
-                                "input": {"command": "supabase --version PRIVATE_COMMAND"},
+                                "input": {
+                                    "command": "supabase --version PRIVATE_COMMAND"
+                                },
                             }
                         ]
                     },
@@ -203,6 +210,12 @@ class SessionWorkflowRetrospectiveTests(unittest.TestCase):
             )
             (handoffs / "SESSION_HANDOFF.md").write_text(
                 "# PRIVATE TITLE\n## 从这里恢复\n## 已完成验证\n## 仍需处理\n",
+                encoding="utf-8",
+            )
+            generated_handoffs = handoffs / "node_modules"
+            generated_handoffs.mkdir()
+            (generated_handoffs / "SESSION_HANDOFF.md").write_text(
+                "# Generated dependency handoff\n",
                 encoding="utf-8",
             )
             inventory = root / "inventory.md"
@@ -236,21 +249,39 @@ class SessionWorkflowRetrospectiveTests(unittest.TestCase):
                 ["source-backed-research"],
             )
             self.assertEqual(category_rows["research-reference"]["support"], [])
-            self.assertEqual(category_rows["research-reference"]["support"], [])
             self.assertEqual(report["handoffs"]["documents"], 1)
+            self.assertEqual(
+                report["handoff_improvements"],
+                [
+                    {
+                        "name": "explicit-risk-blocker-state",
+                        "covered": 0,
+                        "documents": 1,
+                        "missing": 1,
+                        "owner": "implementation-workflow",
+                    }
+                ],
+            )
             self.assertEqual(report["summary"]["malformed_jsonl_lines"], 1)
             self.assertEqual(report["summary"]["history_files"], 2)
             self.assertEqual(report["summary"]["codex_session_files"], 1)
             self.assertEqual(report["summary"]["claude_session_files"], 1)
             self.assertEqual(report["summary"]["session_cache_hits"], 0)
             self.assertEqual(cached_report["summary"]["session_cache_hits"], 2)
-            self.assertNotIn(temporary_directory, args.cache.read_text(encoding="utf-8"))
+            self.assertNotIn(
+                temporary_directory, args.cache.read_text(encoding="utf-8")
+            )
             self.assertEqual(
                 report["summary"]["window_start"],
                 "2027-01-15T08:00:00+00:00",
             )
             self.assertIn(
                 "concrete next work in 1/1 documents",
+                rendered,
+            )
+            self.assertIn(
+                "`explicit-risk-blocker-state` missing in 1 document(s) -> "
+                "`implementation-workflow`",
                 rendered,
             )
             for private_value in (
@@ -326,7 +357,9 @@ class SessionWorkflowRetrospectiveTests(unittest.TestCase):
 
     def test_private_mcp_provider_name_is_aggregated(self) -> None:
         self.assertEqual(analyzer.mcp_provider("mcp__github__search"), "github")
-        self.assertEqual(analyzer.mcp_provider("mcp__PRIVATE_ACCOUNT__search"), "custom")
+        self.assertEqual(
+            analyzer.mcp_provider("mcp__PRIVATE_ACCOUNT__search"), "custom"
+        )
         self.assertEqual(analyzer.mcp_provider("private-mcp-tool"), "custom")
 
         tools = analyzer.ToolStats()
@@ -337,6 +370,19 @@ class SessionWorkflowRetrospectiveTests(unittest.TestCase):
             {"cmd": "gh --version"},
         )
         self.assertEqual(tools.surfaces, {"mcp__custom__tool": 1})
+
+    def test_cli_tokens_are_counted_once_per_tool_call(self) -> None:
+        tools = analyzer.ToolStats()
+
+        analyzer.add_tool_call(
+            tools,
+            "opaque-session",
+            "exec_command",
+            {"cmd": "python3 script.py && gh api /user && gh --version"},
+        )
+
+        self.assertEqual(tools.calls["python"], 1)
+        self.assertEqual(tools.calls["gh"], 1)
 
 
 if __name__ == "__main__":

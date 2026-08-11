@@ -22,7 +22,7 @@
     "description": "Build Codex CLIs from APIs, OpenAPI specs, SDKs, curl, web apps, or scripts, with stable JSON output, auth, and companion Skills."
   },
   "cli-tooling-inventory": {
-    "description": "Inspect local CLIs and MCP tools. Use for availability, authentication, tool selection, runtimes, browser automation, and deployments."
+    "description": "Audit and verify local CLI/MCP setup. Use for availability, auth, PATH, architecture, provider logins, tool selection, and Skill coverage."
   },
   "configure-custom-domain": {
     "description": "Configure and verify custom domains for Vercel apps with Aliyun DNS. Use for DNS records, HTTPS, routing, aliases, and domain docs."

@@ -6,10 +6,10 @@ This report compares active top-level Claude Code skills with enabled Codex skil
 
 - Claude skill entries: 137
 - Claude unique skill names: 135
-- Codex enabled skills: 144
+- Codex enabled skills: 157
 - Shared names: 97
 - Claude-only names: 38
-- Codex-only names: 47
+- Codex-only names: 60
 - Claude commands: 15
 - Claude subagents: 15
 - Claude plugins: 18 installed, 0 enabled, 18 disabled
@@ -92,9 +92,9 @@ A full Claude-to-Codex migration is unsafe here because it would overwrite share
 ## Claude metadata findings
 
 - Missing declared `name` (directory fallback used): research, research-add-fields, research-add-items, research-deep, research-report
-- Broken top-level symlinks: huggingface-tool-builder
+- Broken top-level symlinks: none
 - Duplicate Claude names: gstack (_gstack-command, gstack); open-gstack-browser (connect-chrome, open-gstack-browser)
 
 ## Codex-only skills
 
-`agent-productization`, `anycap-cli`, `chatgpt-apps`, `checkpoint`, `cli-creator`, `cli-tooling-governance`, `cli-tooling-inventory`, `codex-mcp-profiles`, `configure-custom-domain`, `define-goal`, `gh-address-comments`, `gh-fix-ci`, `goal-prompt`, `gstack-openclaw-ceo-review`, `gstack-openclaw-investigate`, `gstack-openclaw-office-hours`, `gstack-openclaw-retro`, `imagegen`, `implementation-workflow`, `jd-shopping`, `jupyter-notebook`, `kevinten10-supabase`, `kt-aicoding-registry`, `mcp-server-release`, `mcp-surface-governance`, `media-production-pipeline`, `migrate-to-codex`, `openai-docs`, `pdf`, `playwright`, `playwright-interactive`, `plugin-creator`, `project-workspace-triage`, `repo-readme-release`, `screenshot`, `security-best-practices`, `security-ownership-map`, `security-threat-model`, `skill-creator`, `skill-image`, `skill-installer`, `speech`, `taobao-shopping`, `transcribe`, `volcengine-ark-migration`, `wechat-local-history`, `workspace-noise-cleanup`
+`agent-productization`, `anycap-ai-tool-seo`, `anycap-blog-production`, `anycap-cli`, `anycap-deepresearch`, `anycap-gemini-omni-video-edit`, `anycap-human-interaction`, `anycap-media-production`, `anycap-social-meme-workflows`, `anycap-worldcup-predict`, `chatgpt-apps`, `checkpoint`, `cli-creator`, `cli-tooling-governance`, `cli-tooling-inventory`, `codex-mcp-profiles`, `configure-custom-domain`, `define-goal`, `gh-address-comments`, `gh-fix-ci`, `goal-prompt`, `gstack-openclaw-ceo-review`, `gstack-openclaw-investigate`, `gstack-openclaw-office-hours`, `gstack-openclaw-retro`, `imagegen`, `implementation-workflow`, `jd-shopping`, `jupyter-notebook`, `kevinten10-supabase`, `kt-aicoding-registry`, `mcp-server-release`, `mcp-surface-governance`, `media-production-pipeline`, `migrate-to-codex`, `openai-docs`, `pdf`, `playwright`, `playwright-interactive`, `plugin-creator`, `print-hp-m1005-usb`, `project-workspace-triage`, `repo-readme-release`, `review-agent`, `screenshot`, `security-best-practices`, `security-ownership-map`, `security-threat-model`, `session-workflow-retrospective`, `skill-creator`, `skill-image`, `skill-installer`, `source-backed-research`, `speech`, `submit-12315-complaint`, `taobao-shopping`, `transcribe`, `volcengine-ark-migration`, `wechat-local-history`, `workspace-noise-cleanup`

@@ -7,6 +7,7 @@ import argparse
 import fcntl
 import hashlib
 import json
+import os
 import re
 import shutil
 import tempfile
@@ -127,18 +128,62 @@ CLI_NAMES = (
     "yq",
 )
 
+CLI_CANONICAL = {name.lower(): name for name in CLI_NAMES}
+CLI_TOKEN_RE = re.compile(
+    r"(?<![a-z0-9_-])(?:"
+    + r"python(?:3(?:\.\d+)?)?"
+    + "|"
+    + "|".join(
+        re.escape(name)
+        for name in sorted(CLI_NAMES, key=len, reverse=True)
+        if name != "python"
+    )
+    + r")(?![a-z0-9_-])",
+    re.IGNORECASE,
+)
+
 HANDOFF_CONCEPTS = {
     "resume-entry": re.compile(r"恢复|继续|resume|from here", re.IGNORECASE),
     "current-state": re.compile(r"当前|状态|current|state", re.IGNORECASE),
-    "completed-decisions": re.compile(r"完成|结论|决定|completed|decision|done", re.IGNORECASE),
-    "verification-evidence": re.compile(r"验证|证据|资料|来源|validation|evidence|checks", re.IGNORECASE),
-    "remaining-next": re.compile(r"仍需|剩余|待办|后续|下一|pending|remaining|next", re.IGNORECASE),
+    "completed-decisions": re.compile(
+        r"完成|结论|决定|completed|decision|done", re.IGNORECASE
+    ),
+    "verification-evidence": re.compile(
+        r"验证|证据|资料|来源|validation|evidence|checks", re.IGNORECASE
+    ),
+    "remaining-next": re.compile(
+        r"仍需|剩余|待办|后续|下一|pending|remaining|next", re.IGNORECASE
+    ),
     "risk-blocker": re.compile(r"风险|阻塞|注意|blocker|risk", re.IGNORECASE),
     "files-git-state": re.compile(r"文件|git|branch|commit|artifact", re.IGNORECASE),
 }
 
-HANDOFF_FILE_RE = re.compile(r"(?:session.*(?:handoff|summary)|handoff|checkpoint)", re.IGNORECASE)
+HANDOFF_FILE_RE = re.compile(
+    r"(?:session.*(?:handoff|summary)|handoff|checkpoint)", re.IGNORECASE
+)
 CACHE_VERSION = 1
+
+WALK_SKIP_DIRS = {
+    ".cache",
+    ".dart_tool",
+    ".git",
+    ".gradle",
+    ".next",
+    ".npm-cache",
+    ".pnpm-store",
+    ".turbo",
+    ".venv",
+    "DerivedData",
+    "Library",
+    "Pods",
+    "build",
+    "coverage",
+    "dist",
+    "node_modules",
+    "target",
+    "vendor",
+    "venv",
+}
 
 PUBLIC_MCP_PROVIDERS = {
     "context7",
@@ -174,7 +219,9 @@ class ToolStats:
     calls: Counter[str] = field(default_factory=Counter)
     sessions: dict[str, set[str]] = field(default_factory=lambda: defaultdict(set))
     surfaces: Counter[str] = field(default_factory=Counter)
-    surface_sessions: dict[str, set[str]] = field(default_factory=lambda: defaultdict(set))
+    surface_sessions: dict[str, set[str]] = field(
+        default_factory=lambda: defaultdict(set)
+    )
 
 
 def opaque_id(provider: str, value: object) -> str:
@@ -244,12 +291,17 @@ def cached_file_evidence(
         stat = path.stat()
     except OSError:
         return None
-    if evidence.get("size") != stat.st_size or evidence.get("mtime_ns") != stat.st_mtime_ns:
+    if (
+        evidence.get("size") != stat.st_size
+        or evidence.get("mtime_ns") != stat.st_mtime_ns
+    ):
         return None
     return key, evidence
 
 
-def apply_file_evidence(tools: ToolStats, stats: ParseStats, evidence: dict[str, object]) -> bool:
+def apply_file_evidence(
+    tools: ToolStats, stats: ParseStats, evidence: dict[str, object]
+) -> bool:
     stats.files += 1
     stats.records += int(evidence.get("records", 0))
     stats.malformed_lines += int(evidence.get("malformed_lines", 0))
@@ -377,7 +429,9 @@ def parse_args() -> argparse.Namespace:
         help="Read every session file and do not update the aggregate cache.",
     )
     parser.add_argument("--format", choices=("markdown", "json"), default="markdown")
-    parser.add_argument("--output", type=str, default="-", help="Output path or '-' for stdout.")
+    parser.add_argument(
+        "--output", type=str, default="-", help="Output path or '-' for stdout."
+    )
     return parser.parse_args()
 
 
@@ -455,7 +509,9 @@ def add_prompt(
             patterns.dates[name].add(date)
 
 
-def scan_histories(args: argparse.Namespace, since: datetime | None) -> tuple[PatternStats, ParseStats]:
+def scan_histories(
+    args: argparse.Namespace, since: datetime | None
+) -> tuple[PatternStats, ParseStats]:
     patterns = PatternStats()
     stats = ParseStats()
     if args.codex_history.is_file():
@@ -492,17 +548,22 @@ def flatten_strings(value: object) -> Iterable[str]:
             yield from flatten_strings(item)
 
 
-def add_tool_call(tool_stats: ToolStats, session: str, name: str, value: object) -> None:
+def add_tool_call(
+    tool_stats: ToolStats, session: str, name: str, value: object
+) -> None:
     provider = mcp_provider(name)
     safe_name = f"mcp__{provider}__tool" if provider is not None else "other-tool"
     tool_stats.surfaces[safe_name] += 1
     tool_stats.surface_sessions[safe_name].add(session)
     searchable = "\n".join(flatten_strings(value)).lower()
-    for cli in CLI_NAMES:
-        token = r"python(?:3(?:\.\d+)?)?" if cli == "python" else re.escape(cli)
-        if re.search(rf"(?<![a-z0-9_-]){token}(?![a-z0-9_-])", searchable, re.IGNORECASE):
-            tool_stats.calls[cli] += 1
-            tool_stats.sessions[cli].add(session)
+    matched: set[str] = set()
+    for match in CLI_TOKEN_RE.finditer(searchable):
+        token = match.group(0).lower()
+        cli = "python" if token.startswith("python") else CLI_CANONICAL[token]
+        matched.add(cli)
+    for cli in matched:
+        tool_stats.calls[cli] += 1
+        tool_stats.sessions[cli].add(session)
 
 
 def scan_codex_tools(
@@ -539,7 +600,9 @@ def scan_codex_tools(
             if record.get("type") == "session_meta":
                 payload = record.get("payload")
                 if isinstance(payload, dict):
-                    session_id = str(payload.get("session_id") or payload.get("id") or session_id)
+                    session_id = str(
+                        payload.get("session_id") or payload.get("id") or session_id
+                    )
                     session_time = parse_timestamp(
                         payload.get("timestamp") or record.get("timestamp")
                     )
@@ -626,7 +689,9 @@ def scan_claude_tools(
             for item in content:
                 if isinstance(item, dict) and item.get("type") == "tool_use":
                     included = True
-                    calls.append((str(item.get("name") or "tool_use"), item.get("input", {})))
+                    calls.append(
+                        (str(item.get("name") or "tool_use"), item.get("input", {}))
+                    )
         file_tools = ToolStats()
         if included:
             primary_sessions += 1
@@ -704,27 +769,63 @@ def scan_handoffs(roots: list[Path]) -> dict[str, object]:
     for root in roots:
         if not root.is_dir():
             continue
-        for path in root.glob("**/*.md"):
-            if path in seen or not HANDOFF_FILE_RE.search(path.stem):
-                continue
-            if any(part in {".git", "node_modules", "vendor", "dist"} for part in path.parts):
-                continue
-            seen.add(path)
-            try:
-                headings = [
-                    line.lstrip("#").strip()
-                    for line in path.read_text(encoding="utf-8", errors="replace").splitlines()
-                    if re.match(r"^#{1,6}\s+", line)
-                ]
-            except OSError:
-                malformed += 1
-                continue
-            documents += 1
-            heading_text = "\n".join(headings)
-            for name, pattern in HANDOFF_CONCEPTS.items():
-                if pattern.search(heading_text):
-                    concepts[name] += 1
+        for current, directories, filenames in os.walk(root):
+            directories[:] = [
+                name
+                for name in directories
+                if name not in WALK_SKIP_DIRS and not name.startswith(".")
+            ]
+            for filename in filenames:
+                path = Path(current) / filename
+                if path.suffix.lower() != ".md" or not HANDOFF_FILE_RE.search(
+                    path.stem
+                ):
+                    continue
+                if path in seen:
+                    continue
+                seen.add(path)
+                try:
+                    headings = [
+                        line.lstrip("#").strip()
+                        for line in path.read_text(
+                            encoding="utf-8", errors="replace"
+                        ).splitlines()
+                        if re.match(r"^#{1,6}\s+", line)
+                    ]
+                except OSError:
+                    malformed += 1
+                    continue
+                documents += 1
+                heading_text = "\n".join(headings)
+                for name, pattern in HANDOFF_CONCEPTS.items():
+                    if pattern.search(heading_text):
+                        concepts[name] += 1
     return {"documents": documents, "unreadable": malformed, "concepts": dict(concepts)}
+
+
+def handoff_improvement_signals(handoffs: dict[str, object]) -> list[dict[str, object]]:
+    documents = int(handoffs.get("documents", 0))
+    concepts = handoffs.get("concepts", {})
+    if documents == 0 or not isinstance(concepts, dict):
+        return []
+    required = {
+        "concrete-next-action": "remaining-next",
+        "explicit-risk-blocker-state": "risk-blocker",
+    }
+    signals: list[dict[str, object]] = []
+    for name, concept in required.items():
+        covered = int(concepts.get(concept, 0))
+        if covered < documents:
+            signals.append(
+                {
+                    "name": name,
+                    "covered": covered,
+                    "documents": documents,
+                    "missing": documents - covered,
+                    "owner": "implementation-workflow",
+                }
+            )
+    return signals
 
 
 def build_report(args: argparse.Namespace) -> dict[str, object]:
@@ -760,10 +861,14 @@ def build_report(args: argparse.Namespace) -> dict[str, object]:
     if use_cache and next_cache is not None:
         save_tool_cache(cache_path, next_cache)
     tools = merge_tool_stats(codex_tools, claude_tools)
-    roots = args.skill_root or [Path.home() / ".agents" / "skills", Path.home() / ".codex" / "skills"]
+    roots = args.skill_root or [
+        Path.home() / ".agents" / "skills",
+        Path.home() / ".codex" / "skills",
+    ]
     skills = installed_skills(roots)
     documented = documented_tools(args.tool_inventory)
     handoffs = scan_handoffs(args.handoff_root)
+    handoff_improvements = handoff_improvement_signals(handoffs)
 
     categories: list[dict[str, object]] = []
     for name, (_, owners) in CATEGORY_DEFINITIONS.items():
@@ -798,7 +903,8 @@ def build_report(args: argparse.Namespace) -> dict[str, object]:
                 "name": name,
                 "calls": calls,
                 "sessions": sessions,
-                "available": shutil.which(name) is not None or (name == "python" and shutil.which("python3") is not None),
+                "available": shutil.which(name) is not None
+                or (name == "python" and shutil.which("python3") is not None),
                 "documented": name in documented if args.tool_inventory else None,
             }
         )
@@ -823,8 +929,12 @@ def build_report(args: argparse.Namespace) -> dict[str, object]:
             "history_prompts": patterns.total_prompts,
             "history_sessions": len(patterns.distinct_sessions),
             "history_files": history_stats.files,
-            "window_start": patterns.window_start.isoformat() if patterns.window_start else None,
-            "window_end": patterns.window_end.isoformat() if patterns.window_end else None,
+            "window_start": patterns.window_start.isoformat()
+            if patterns.window_start
+            else None,
+            "window_end": patterns.window_end.isoformat()
+            if patterns.window_end
+            else None,
             "codex_session_files": codex_stats.files,
             "codex_primary_tool_sessions": codex_sessions,
             "claude_session_files": claude_stats.files,
@@ -841,6 +951,7 @@ def build_report(args: argparse.Namespace) -> dict[str, object]:
         "cli_tools": cli_rows,
         "mcp_providers": mcp_rows,
         "handoffs": handoffs,
+        "handoff_improvements": handoff_improvements,
     }
 
 
@@ -971,7 +1082,11 @@ def render_markdown(report: dict[str, object]) -> str:
     )
     lines.append(
         "- Frequently referenced CLIs absent from the supplied inventory: "
-        + (", ".join(f"`{row['name']}`" for row in undocumented) if undocumented else "none")
+        + (
+            ", ".join(f"`{row['name']}`" for row in undocumented)
+            if undocumented
+            else "none"
+        )
         + "."
     )
     handoff_documents = int(handoffs["documents"])
@@ -982,13 +1097,27 @@ def render_markdown(report: dict[str, object]) -> str:
         f"concrete next work in {remaining_next}/{handoff_documents} documents; "
         f"risk or blocker state in {risk_blocker}/{handoff_documents}."
     )
+    handoff_improvements = report.get("handoff_improvements", [])
+    assert isinstance(handoff_improvements, list)
+    if handoff_improvements:
+        details = "; ".join(
+            f"`{row['name']}` missing in {row['missing']} document(s) -> `{row['owner']}`"
+            for row in handoff_improvements
+        )
+        lines.append(f"- Handoff workflow improvements: {details}.")
+    else:
+        lines.append("- Handoff workflow improvements: none.")
     return "\n".join(lines).rstrip() + "\n"
 
 
 def main() -> int:
     args = parse_args()
     report = build_report(args)
-    rendered = json.dumps(report, indent=2, ensure_ascii=False) + "\n" if args.format == "json" else render_markdown(report)
+    rendered = (
+        json.dumps(report, indent=2, ensure_ascii=False) + "\n"
+        if args.format == "json"
+        else render_markdown(report)
+    )
     if args.output == "-":
         print(rendered, end="")
     else:

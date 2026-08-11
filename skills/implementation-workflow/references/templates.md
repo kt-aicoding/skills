@@ -59,6 +59,39 @@ When finished, report:
 - Remaining concerns
 ```
 
+## Resume / Handoff
+
+Use for incomplete work, multi-session work, or a durable implementation handoff. Keep every
+heading; write `None` rather than omitting an empty risk or blocker section.
+
+```markdown
+# <Task> Handoff
+
+## Current State
+<what is true now and which artifact is authoritative>
+
+## Completed Decisions And Work
+- <completed item or accepted decision>
+
+## Verification Evidence
+- `<command or check>` -> <result>
+
+## Remaining Work And First Next Action
+- Remaining: <specific incomplete outcome or None>
+- First next action: `<exact command or concrete action>`
+- Resume source: `<plan, report, issue, or file>`
+
+## Risks And Blockers
+- Risks: <known risk or None>
+- Blocker: <blocking condition or None>
+- Needed input or state change: <exact requirement or None>
+
+## Files And Git State
+- Changed or authoritative files: <paths>
+- Branch/commit/PR/deployment: <state>
+- Unrelated dirty worktree changes: <paths or None>
+```
+
 ## Spec-Compliance Review
 
 ```text

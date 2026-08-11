@@ -83,8 +83,10 @@ includes it. Use `references/templates.md` when writing a persistent plan or del
 2. Run the authoritative targeted and integration checks. Record commands and outcomes.
 3. Audit requirement coverage, documentation impact, migrations, generated artifacts, secrets,
    unrelated changes, and remaining blockers.
-4. If the user asked only for implementation, stop with a handoff: completed work, validation,
-   remaining risks, branch state, and uncommitted files.
+4. If the user asked only for implementation, stop with a handoff using the Resume / Handoff
+   template in `references/templates.md`: completed work, validation, remaining work, explicit
+   risk/blocker state, branch state, uncommitted files, authoritative resume source, and first next
+   action. Write `None` when there is no known risk or blocker so the state is unambiguous.
 5. If the user requested Git integration, offer only applicable safe choices:
    - keep the branch and worktree as-is;
    - commit task-related changes and stop;
@@ -107,5 +109,7 @@ Report:
 - unresolved risks, blockers, and unrelated dirty-worktree changes.
 - when work remains, the authoritative resume source, first next action or command, and the exact
   user input or external-state change needed for any blocker.
+- for durable or multi-session work, use stable Resume / Handoff headings even when a section is
+  empty; do not bury remaining work or blocker state in narrative prose.
 
 Never claim completion from an implementer report alone. Verify the actual artifacts and evidence.
