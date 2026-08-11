@@ -1,24 +1,24 @@
 # Codex Skill Usage Audit
 
-Evidence window: `2026-02-17T11:16:10.544Z` to `2026-08-10T01:43:06.138Z`. Retained sessions: **116** (105 primary, 11 subagent).
+Evidence window: `2026-02-17T11:16:10.544Z` to `2026-08-11T02:16:44.865Z`. Retained sessions: **119** (108 primary, 11 subagent).
 
 This report stores aggregate session counts only. It does not include prompts, tool output, working directories, or session identifiers. A session counts as usage when the user explicitly mentions `$skill` or Codex reads that skill's `SKILL.md`. `no-evidence` means no match in retained logs, not that the skill was never used.
 
 ## Summary
 
-- Installed and enabled skills: 156
+- Installed and enabled skills: 157
 - Implicit skills: 53
-- Explicit-only skills: 103
-- Implicit description characters: 8297 (limit: 10000; within budget: true)
+- Explicit-only skills: 104
+- Implicit description characters: 8350 (limit: 10000; within budget: true)
 - Used implicit bodies over 500 lines: 8
 - Repository-owned used implicit bodies over 500 lines: 0
 - Implicit skills with at least 2 retained sessions missing complete UI metadata: 0
 - Frequent threshold: 5 sessions
 - Intentional implicit keep list: 7
-- frequent: 23
-- no-evidence: 87
+- frequent: 25
+- no-evidence: 88
 - rare: 22
-- used: 24
+- used: 22
 
 ## Frequent skills
 
@@ -32,20 +32,22 @@ This report stores aggregate session counts only. It does not include prompts, t
 | browse | 20 | 20 | 0 | 20 | implicit | shared | 133 | keep |
 | project-workspace-triage | 16 | 16 | 0 | 16 | implicit | user | 133 | keep |
 | careful | 14 | 14 | 0 | 14 | implicit | shared | 134 | keep |
-| cli-tooling-inventory | 13 | 13 | 0 | 13 | implicit | user | 134 | keep |
+| cli-tooling-inventory | 13 | 13 | 0 | 13 | implicit | user | 138 | keep |
+| implementation-workflow | 11 | 11 | 0 | 11 | implicit | shared | 129 | keep |
 | goal-prompt | 10 | 10 | 9 | 3 | implicit | shared | 135 | keep |
 | workspace-noise-cleanup | 10 | 10 | 0 | 10 | implicit | user | 130 | keep |
-| implementation-workflow | 9 | 9 | 0 | 9 | implicit | shared | 129 | keep |
+| kt-aicoding-registry | 8 | 8 | 0 | 8 | implicit | shared | 132 | keep |
+| mcp-surface-governance | 8 | 8 | 0 | 8 | implicit | shared | 121 | keep |
+| openai-docs | 8 | 8 | 0 | 8 | implicit | system | 496 | system-managed-description |
 | skill-creator | 8 | 8 | 0 | 8 | implicit | system | 225 | system-managed-description |
 | cli-tooling-governance | 7 | 7 | 0 | 7 | implicit | shared | 128 | keep |
 | investigate | 7 | 7 | 0 | 7 | implicit | shared | 137 | keep |
-| mcp-surface-governance | 7 | 7 | 0 | 7 | implicit | shared | 121 | keep |
-| openai-docs | 7 | 7 | 0 | 7 | implicit | system | 447 | system-managed-description |
 | pdf | 7 | 7 | 0 | 7 | implicit | user | 133 | keep |
-| kt-aicoding-registry | 6 | 6 | 0 | 6 | implicit | shared | 132 | keep |
+| session-workflow-retrospective | 6 | 6 | 0 | 6 | implicit | shared | 133 | keep |
 | configure-custom-domain | 5 | 5 | 0 | 5 | implicit | user | 131 | keep |
 | deploy-to-vercel | 5 | 5 | 0 | 5 | implicit | shared | 130 | keep |
 | gstack-upgrade | 5 | 5 | 0 | 5 | implicit | shared | 131 | keep |
+| security-best-practices | 5 | 5 | 0 | 5 | implicit | user | 128 | keep |
 | skill-image | 5 | 5 | 0 | 5 | implicit | shared | 138 | keep |
 
 ## Review signals
@@ -63,8 +65,8 @@ No explicit-only skill crossed the frequent threshold.
 | Skill | Sessions | Primary | Explicit | Reads | Policy | Owner | Description | Signal |
 | --- | ---: | ---: | ---: | ---: | --- | --- | ---: | --- |
 | imagegen | 25 | 25 | 0 | 25 | implicit | system | 570 | system-managed-description |
+| openai-docs | 8 | 8 | 0 | 8 | implicit | system | 496 | system-managed-description |
 | skill-creator | 8 | 8 | 0 | 8 | implicit | system | 225 | system-managed-description |
-| openai-docs | 7 | 7 | 0 | 7 | implicit | system | 447 | system-managed-description |
 | skill-installer | 2 | 2 | 0 | 2 | implicit | system | 225 | system-managed-description |
 | plugin-creator | 1 | 1 | 0 | 1 | implicit | system | 471 | system-managed-description |
 
@@ -111,32 +113,32 @@ None.
 | browse | 20 | 20 | 0 | 20 | implicit | shared | 133 | keep |
 | project-workspace-triage | 16 | 16 | 0 | 16 | implicit | user | 133 | keep |
 | careful | 14 | 14 | 0 | 14 | implicit | shared | 134 | keep |
-| cli-tooling-inventory | 13 | 13 | 0 | 13 | implicit | user | 134 | keep |
+| cli-tooling-inventory | 13 | 13 | 0 | 13 | implicit | user | 138 | keep |
+| implementation-workflow | 11 | 11 | 0 | 11 | implicit | shared | 129 | keep |
 | goal-prompt | 10 | 10 | 9 | 3 | implicit | shared | 135 | keep |
 | workspace-noise-cleanup | 10 | 10 | 0 | 10 | implicit | user | 130 | keep |
-| implementation-workflow | 9 | 9 | 0 | 9 | implicit | shared | 129 | keep |
+| kt-aicoding-registry | 8 | 8 | 0 | 8 | implicit | shared | 132 | keep |
+| mcp-surface-governance | 8 | 8 | 0 | 8 | implicit | shared | 121 | keep |
+| openai-docs | 8 | 8 | 0 | 8 | implicit | system | 496 | system-managed-description |
 | skill-creator | 8 | 8 | 0 | 8 | implicit | system | 225 | system-managed-description |
 | cli-tooling-governance | 7 | 7 | 0 | 7 | implicit | shared | 128 | keep |
 | investigate | 7 | 7 | 0 | 7 | implicit | shared | 137 | keep |
-| mcp-surface-governance | 7 | 7 | 0 | 7 | implicit | shared | 121 | keep |
-| openai-docs | 7 | 7 | 0 | 7 | implicit | system | 447 | system-managed-description |
 | pdf | 7 | 7 | 0 | 7 | implicit | user | 133 | keep |
-| kt-aicoding-registry | 6 | 6 | 0 | 6 | implicit | shared | 132 | keep |
+| session-workflow-retrospective | 6 | 6 | 0 | 6 | implicit | shared | 133 | keep |
 | configure-custom-domain | 5 | 5 | 0 | 5 | implicit | user | 131 | keep |
 | deploy-to-vercel | 5 | 5 | 0 | 5 | implicit | shared | 130 | keep |
 | gstack-upgrade | 5 | 5 | 0 | 5 | implicit | shared | 131 | keep |
+| security-best-practices | 5 | 5 | 0 | 5 | implicit | user | 128 | keep |
 | skill-image | 5 | 5 | 0 | 5 | implicit | shared | 138 | keep |
 | design-review | 4 | 4 | 0 | 4 | implicit | shared | 140 | keep |
+| find-bugs | 4 | 4 | 0 | 4 | implicit | shared | 140 | keep |
 | kevinten10-supabase | 4 | 4 | 0 | 4 | implicit | user | 138 | keep |
-| security-best-practices | 4 | 4 | 0 | 4 | implicit | user | 128 | keep |
-| session-workflow-retrospective | 4 | 4 | 0 | 4 | implicit | shared | 133 | keep |
+| mcp-server-release | 4 | 4 | 0 | 4 | implicit | user | 129 | keep |
 | vercel-react-best-practices | 4 | 4 | 0 | 4 | implicit | shared | 134 | keep |
 | wechat-local-history | 4 | 4 | 0 | 4 | explicit-only | user | 200 | keep |
 | agent-productization | 3 | 3 | 0 | 3 | implicit | user | 132 | keep |
 | codex-mcp-profiles | 3 | 3 | 0 | 3 | implicit | user | 125 | keep |
-| find-bugs | 3 | 3 | 0 | 3 | implicit | shared | 140 | keep |
 | land-and-deploy | 3 | 3 | 0 | 3 | implicit | shared | 136 | keep |
-| mcp-server-release | 3 | 3 | 0 | 3 | implicit | user | 129 | keep |
 | media-production-pipeline | 3 | 3 | 0 | 3 | implicit | user | 134 | keep |
 | open-gstack-browser | 3 | 3 | 0 | 3 | implicit | shared | 135 | keep |
 | repo-readme-release | 3 | 3 | 0 | 3 | implicit | user | 131 | keep |
@@ -240,6 +242,7 @@ None.
 | quieter | 0 | 0 | 0 | 0 | explicit-only | shared | 227 | keep |
 | redesign-existing-projects | 0 | 0 | 0 | 0 | explicit-only | shared | 225 | keep |
 | replicate | 0 | 0 | 0 | 0 | explicit-only | shared | 58 | keep |
+| review-agent | 0 | 0 | 0 | 0 | explicit-only | system | 229 | keep |
 | security-ownership-map | 0 | 0 | 0 | 0 | explicit-only | user | 532 | keep |
 | security-review | 0 | 0 | 0 | 0 | explicit-only | shared | 312 | keep |
 | security-threat-model | 0 | 0 | 0 | 0 | explicit-only | user | 412 | keep |
