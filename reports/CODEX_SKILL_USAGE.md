@@ -31,7 +31,7 @@ This report stores aggregate session counts only. It does not include prompts, t
 | imagegen | 25 | 25 | 0 | 25 | implicit | system | 570 | system-managed-description |
 | browse | 20 | 20 | 0 | 20 | implicit | shared | 133 | keep |
 | project-workspace-triage | 16 | 16 | 0 | 16 | implicit | user | 133 | keep |
-| careful | 13 | 13 | 0 | 13 | implicit | shared | 134 | keep |
+| careful | 14 | 14 | 0 | 14 | implicit | shared | 134 | keep |
 | cli-tooling-inventory | 13 | 13 | 0 | 13 | implicit | user | 134 | keep |
 | goal-prompt | 10 | 10 | 9 | 3 | implicit | shared | 135 | keep |
 | workspace-noise-cleanup | 10 | 10 | 0 | 10 | implicit | user | 130 | keep |
@@ -110,7 +110,7 @@ None.
 | imagegen | 25 | 25 | 0 | 25 | implicit | system | 570 | system-managed-description |
 | browse | 20 | 20 | 0 | 20 | implicit | shared | 133 | keep |
 | project-workspace-triage | 16 | 16 | 0 | 16 | implicit | user | 133 | keep |
-| careful | 13 | 13 | 0 | 13 | implicit | shared | 134 | keep |
+| careful | 14 | 14 | 0 | 14 | implicit | shared | 134 | keep |
 | cli-tooling-inventory | 13 | 13 | 0 | 13 | implicit | user | 134 | keep |
 | goal-prompt | 10 | 10 | 9 | 3 | implicit | shared | 135 | keep |
 | workspace-noise-cleanup | 10 | 10 | 0 | 10 | implicit | user | 130 | keep |
@@ -134,6 +134,7 @@ None.
 | wechat-local-history | 4 | 4 | 0 | 4 | explicit-only | user | 200 | keep |
 | agent-productization | 3 | 3 | 0 | 3 | implicit | user | 132 | keep |
 | codex-mcp-profiles | 3 | 3 | 0 | 3 | implicit | user | 125 | keep |
+| find-bugs | 3 | 3 | 0 | 3 | implicit | shared | 140 | keep |
 | land-and-deploy | 3 | 3 | 0 | 3 | implicit | shared | 136 | keep |
 | mcp-server-release | 3 | 3 | 0 | 3 | implicit | user | 129 | keep |
 | media-production-pipeline | 3 | 3 | 0 | 3 | implicit | user | 134 | keep |
@@ -142,7 +143,6 @@ None.
 | source-backed-research | 3 | 3 | 0 | 3 | implicit | shared | 137 | keep |
 | wrangler | 3 | 3 | 0 | 3 | implicit | shared | 132 | keep |
 | brief-to-tasks | 2 | 2 | 0 | 2 | implicit | shared | 138 | keep |
-| find-bugs | 2 | 2 | 0 | 2 | implicit | shared | 140 | keep |
 | gh-fix-ci | 2 | 2 | 0 | 2 | implicit | user | 125 | keep |
 | jd-shopping | 2 | 2 | 0 | 2 | explicit-only | shared | 140 | keep |
 | modern-python | 2 | 2 | 0 | 2 | implicit | shared | 135 | keep |
