@@ -21,6 +21,7 @@
 | Failure mode | Clear error category and retry guidance | Silent or ambiguous failures |
 | State | Explicit and inspectable | Hidden session assumptions |
 | File writes | Format-matching new targets; in-place behavior is explicit | Silent overwrite or extension/content mismatch |
+| Remote I/O | Streamed under byte limits; partial output cleaned up | Whole response buffered or half-written files retained |
 | Resource use | Schema and runtime agree on count, size, dimensions, and timeouts | Bounds exist only in docs or only in schema |
 
 ## File-Producing Tools
@@ -30,6 +31,10 @@
 - Validate all inputs and target collisions before expensive generation, decoding, rendering, or subprocess work.
 - For external converters, generate in an isolated temporary directory, verify the expected artifact exists, then publish it to the already-validated final path.
 - Return the saved path and concise metadata. Inline only bounded previews; direct the agent to the saved file for large media.
+- For remote artifacts, check `Content-Length` when trustworthy and still count streamed bytes. Create the destination exclusively and remove it if streaming, validation, or decoding fails.
+- Do not include full request URLs in transport errors when query strings may contain API keys, signatures, or temporary credentials.
+- For local inputs, validate type and `stat()` size before reading, then cap the actual read or streamed byte count in case the file changes.
+- For Base64 inputs, estimate decoded size from the encoded length before allocating, decode with strict validation, and verify the decoded byte count before writing or returning inline content.
 
 ## Maturity Model
 
@@ -50,4 +55,8 @@
 | Returning unbounded raw logs | Return structured summaries and links to logs |
 | Trusting JSON Schema as the only validation | Enforce the same limits at the runtime boundary |
 | Letting converters write directly over final targets | Convert in isolation, verify, then publish a new file |
+| Buffering provider downloads with `response.content` | Stream with a hard runtime limit and clean partial files |
+| Echoing transport exceptions containing signed URLs | Return a bounded error category without the request URL |
+| Reading a local asset after only a path check | Validate format/size first and cap actual bytes during access |
+| Decoding unbounded or permissive Base64 | Pre-check encoded length, decode strictly, then check decoded size |
 | Storing secrets in MCP examples | Use placeholders and explicit setup instructions |
