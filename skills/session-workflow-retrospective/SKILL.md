@@ -32,6 +32,7 @@ Turn retained local work history into reusable capabilities without copying priv
 - Require recurrence across multiple sessions and dates; one long session is not a reusable workflow.
 - Distinguish workflow ownership from supporting tools. A browser, provider Skill, CLI, or MCP can enable a task without defining its evidence, sequencing, or completion gates.
 - Repeated corrective prompts usually indicate an existing workflow needs clearer gates before they justify a new Skill.
+- Repeated handoff-schema gaps belong in the existing implementation or checkpoint workflow unless the retained evidence shows a distinct trigger and owner.
 - A referenced but missing executable is only an installation candidate after confirming that an existing CLI cannot cover it.
 - Do not install or enable an MCP server merely because its name appears in history. Require a live, typed, agent-loop use case that is not better served by CLI or browser tooling.
 - Never emit prompts, command arguments, tool outputs, session IDs, working directories, tokens, or account identifiers in the aggregate report.
